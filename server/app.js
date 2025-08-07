@@ -2,11 +2,14 @@ import express from "express";
 import axios from "axios";
 import cors from "cors";
 import mongoose from "mongoose";
+import { configDotenv } from "dotenv";
 import Problem from "./models/Problem.js";
 import logger from "./utils/logger.js";
 
+configDotenv();
 const app = express();
 const MONGO_URI = process.env.MONGO_URI ?? "mongodb://localhost:27017/flipgame";
+const PORT = process.env.CURR_PORT ?? 3000;
 
 app.use(
   cors({
@@ -139,6 +142,6 @@ async function dbConnect() {
 
 dbConnect();
 
-app.listen(3000, () => {
-  console.log("Listening on port 3000.");
+app.listen(PORT, () => {
+  console.log(`Listening on port ${PORT}.`);
 });
