@@ -11,6 +11,8 @@
   // Core batch logic
   // ——————————————————————————————
 
+  let lastPayloadJSON = null;
+
   function scheduleBatch() {
     clearTimeout(batchTimer);
     batchTimer = setTimeout(runBatchRating, 300);
@@ -35,12 +37,19 @@
       return;
     }
 
-    const payload = { questions: rows.map((r) => r.title) };
+    const questions = rows.map((r) => r.title);
+    const payloadJSON = JSON.stringify(questions);
+
+    if (payloadJSON === lastPayloadJSON) {
+      console.log("[content] batch skipped (no change in questions)");
+      return;
+    }
+    lastPayloadJSON = payloadJSON;
 
     fetch(BATCH_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ questions }),
     })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
