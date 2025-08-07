@@ -3,6 +3,7 @@ import axios from "axios";
 import cors from "cors";
 import mongoose from "mongoose";
 import Problem from "./models/Problem.js";
+import logger from "./utils/logger.js";
 
 const app = express();
 const MONGO_URI = process.env.MONGO_URI ?? "mongodb://localhost:27017/flipgame";
@@ -14,6 +15,7 @@ app.use(
 );
 
 app.use(express.json());
+app.use(logger);
 
 app.post("/data", async (req, res) => {
   const { cookies } = req?.body;
