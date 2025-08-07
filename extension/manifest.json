@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "LeetCode Rating Generator",
+  "version": "1.1",
+  "host_permissions": ["https://leetcode.com/*", "http://localhost:3000/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://leetcode.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://leetcode.com/problems/*"],
+      "js": ["problem-content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
