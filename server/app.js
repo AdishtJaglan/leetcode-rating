@@ -101,32 +101,31 @@ app.post("/rate", async (req, res) => {
 });
 
 app.post("/rate-batch", async (req, res) => {
-  const { questions } = req.body;
-
   try {
-    const responses = await Promise.all(
-      questions.map(async (q) => {
-        const match = q.match(/^(\d+)\./);
-        if (!match) {
-          throw new Error('Title must start with "<id>."');
-        }
-        const id = match[1];
-        const problem = await Problem.findOne({ id });
-        return {
-          id: id,
-          rating: problem?.rating,
-        };
-      })
-    );
+    const questions = req.body.questions || [];
+    const ids = questions.map((q) => {
+      const m = q.match(/^(\d+)\./);
+      if (!m) throw new Error('Title must start with "<id>."');
+      return m[1];
+    });
 
-    const responseObject = responses.reduce((acc, item) => {
-      acc[item.id] = item.rating;
-      return acc;
+    const docs = await Problem.find({ id: { $in: ids } })
+      .select("id rating -_id")
+      .lean();
+
+    const ratingById = docs.reduce((m, doc) => {
+      m[doc.id] = doc.rating;
+      return m;
+    }, Object.create(null));
+
+    const responseObject = ids.reduce((out, id) => {
+      out[id] = ratingById[id] ?? null;
+      return out;
     }, {});
 
-    return res.json({ message: "received.", data: responseObject });
-  } catch (error) {
-    return res.status(400).json({ error: error.message });
+    res.json({ message: "received.", data: responseObject });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 
