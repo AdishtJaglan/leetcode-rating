@@ -24,23 +24,96 @@ app.post("/data", async (req, res) => {
   const { cookies } = req?.body;
   const LEETCODE_SESSION = cookies[0]?.value;
   const CSRFToken = cookies[1]?.value;
+  let username = "";
+  let questionCnt = "";
 
   const url = "https://leetcode.com/graphql/";
-  const payload = {
+
+  const headers = {
+    "Content-Type": "application/json",
+    Origin: "https://leetcode.com",
+    "X-CSRFToken": CSRFToken,
+    Cookie: `LEETCODE_SESSION=${LEETCODE_SESSION};`,
+  };
+
+  // ——————————————————————————————
+  // This body fetches the username
+  // ——————————————————————————————
+  const body = {
+    query: `
+      query globalData {
+        userStatus {
+          userId
+          username
+          realName
+          avatar
+          activeSessionId
+        }
+      }
+    `,
+    variables: {},
+    operationName: "globalData",
+  };
+
+  try {
+    const { data } = await axios.post(url, body, { headers });
+    const dataBody = data?.data;
+    username = dataBody?.userStatus?.username;
+  } catch (err) {
+    console.error("Request failed:", err);
+    throw err;
+  }
+
+  // ——————————————————————————————
+  // This body fetches the count of questions solved
+  // ——————————————————————————————
+  const questionCntBody = {
+    query: `
+      query userSessionProgress($username: String!) {
+        allQuestionsCount {
+          difficulty
+          count
+        }
+        matchedUser(username: $username) {
+          submitStats {
+            acSubmissionNum {
+              difficulty
+              count
+              submissions
+            }
+          }
+        }
+      }
+    `,
+    variables: {
+      username: username,
+    },
+    operationName: "userSessionProgress",
+  };
+
+  try {
+    const { data } = await axios.post(url, questionCntBody, { headers });
+    questionCnt = data?.data?.matchedUser?.submitStats?.acSubmissionNum?.find(
+      (item) => item.difficulty === "All"
+    )?.count;
+  } catch (error) {
+    console.error("Request failed:", error);
+    throw error;
+  }
+
+  // ——————————————————————————————
+  // This body fetches the questions solved by the user
+  // ——————————————————————————————
+  const questionsBody = {
     query: `
     query userProgressQuestionList($filters: UserProgressQuestionListInput) {
       userProgressQuestionList(filters: $filters) {
-        totalNum
         questions {
-          translatedTitle
           frontendId
           title
-          titleSlug
           difficulty
           lastSubmittedAt
-          numSubmitted
           questionStatus
-          lastResult
           topicTags {
             name
             nameTranslated
@@ -50,12 +123,12 @@ app.post("/data", async (req, res) => {
       }
     }
   `,
-    variables: { filters: { skip: 0, limit: 400 } },
+    variables: { filters: { skip: 0, limit: questionCnt } },
     operationName: "userProgressQuestionList",
   };
 
   try {
-    const { data: response } = await axios.post(url, payload, {
+    const { data } = await axios.post(url, questionsBody, {
       headers: {
         "Content-Type": "application/json",
         Accept: "*/*",
@@ -65,9 +138,7 @@ app.post("/data", async (req, res) => {
         Cookie: `LEETCODE_SESSION=${LEETCODE_SESSION}`,
       },
     });
-
-    const questions = response?.data?.userProgressQuestionList?.questions;
-    console.log(questions);
+    console.log(data?.data?.userProgressQuestionList?.questions);
   } catch (error) {
     console.error(error);
   }
