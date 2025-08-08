@@ -4,6 +4,7 @@ import cors from "cors";
 import mongoose from "mongoose";
 import { configDotenv } from "dotenv";
 import Problem from "./models/Problem.js";
+import User from "./models/User.js";
 import logger from "./utils/logger.js";
 
 configDotenv();
@@ -20,130 +21,119 @@ app.use(
 app.use(express.json());
 app.use(logger);
 
-app.post("/data", async (req, res) => {
-  const { cookies } = req?.body;
-  const LEETCODE_SESSION = cookies[0]?.value;
-  const CSRFToken = cookies[1]?.value;
-  let username = "";
-  let questionCnt = "";
-
-  const url = "https://leetcode.com/graphql/";
-
-  const headers = {
-    "Content-Type": "application/json",
-    Origin: "https://leetcode.com",
-    "X-CSRFToken": CSRFToken,
-    Cookie: `LEETCODE_SESSION=${LEETCODE_SESSION};`,
-  };
-
-  // ——————————————————————————————
-  // This body fetches the username
-  // ——————————————————————————————
-  const body = {
-    query: `
-      query globalData {
-        userStatus {
-          userId
-          username
-          realName
-          avatar
-          activeSessionId
-        }
-      }
-    `,
-    variables: {},
-    operationName: "globalData",
-  };
-
+app.post("/data", async (req, res, next) => {
   try {
-    const { data } = await axios.post(url, body, { headers });
-    const dataBody = data?.data;
-    username = dataBody?.userStatus?.username;
-  } catch (err) {
-    console.error("Request failed:", err);
-    throw err;
-  }
+    const { cookies } = req.body;
+    const [sessionCookie, csrfCookie] = cookies;
+    const LEETCODE_SESSION = sessionCookie.value;
+    const CSRFToken = csrfCookie.value;
+    const GRAPHQL_URL = "https://leetcode.com/graphql/";
 
-  // ——————————————————————————————
-  // This body fetches the count of questions solved
-  // ——————————————————————————————
-  const questionCntBody = {
-    query: `
-      query userSessionProgress($username: String!) {
-        allQuestionsCount {
-          difficulty
-          count
-        }
-        matchedUser(username: $username) {
-          submitStats {
-            acSubmissionNum {
-              difficulty
-              count
-              submissions
+    const baseHeaders = {
+      "Content-Type": "application/json",
+      Origin: "https://leetcode.com",
+      "X-CSRFToken": CSRFToken,
+      Cookie: `LEETCODE_SESSION=${LEETCODE_SESSION};`,
+    };
+
+    const gql = (body, extraHeaders = {}) =>
+      axios
+        .post(GRAPHQL_URL, body, {
+          headers: { ...baseHeaders, ...extraHeaders },
+        })
+        .then((r) => r.data.data);
+
+    // 1) fetch global user info
+    const { userStatus } = await gql({
+      query: `query { userStatus { username avatar } }`,
+    });
+
+    const username = userStatus.username;
+    const avatar = userStatus.avatar;
+
+    // 2) fetch submission counts
+    const { matchedUser } = await gql({
+      query: `
+        query($username: String!) {
+          matchedUser(username: $username) {
+            submitStats {
+              acSubmissionNum { difficulty count submissions }
             }
           }
-        }
-      }
-    `,
-    variables: {
-      username: username,
-    },
-    operationName: "userSessionProgress",
-  };
-
-  try {
-    const { data } = await axios.post(url, questionCntBody, { headers });
-    questionCnt = data?.data?.matchedUser?.submitStats?.acSubmissionNum?.find(
-      (item) => item.difficulty === "All"
-    )?.count;
-  } catch (error) {
-    console.error("Request failed:", error);
-    throw error;
-  }
-
-  // ——————————————————————————————
-  // This body fetches the questions solved by the user
-  // ——————————————————————————————
-  const questionsBody = {
-    query: `
-    query userProgressQuestionList($filters: UserProgressQuestionListInput) {
-      userProgressQuestionList(filters: $filters) {
-        questions {
-          frontendId
-          title
-          difficulty
-          lastSubmittedAt
-          questionStatus
-          topicTags {
-            name
-            nameTranslated
-            slug
-          }
-        }
-      }
-    }
-  `,
-    variables: { filters: { skip: 0, limit: questionCnt } },
-    operationName: "userProgressQuestionList",
-  };
-
-  try {
-    const { data } = await axios.post(url, questionsBody, {
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "*/*",
-        Origin: "https://leetcode.com",
-        Referer: "https://leetcode.com/progress/",
-        "X-CSRFToken": CSRFToken,
-        Cookie: `LEETCODE_SESSION=${LEETCODE_SESSION}`,
-      },
+        }`,
+      variables: { username },
     });
-    console.log(data?.data?.userProgressQuestionList?.questions);
-  } catch (error) {
-    console.error(error);
-  }
 
-  return res.json({ message: "Received data." });
+    const submissions = matchedUser.submitStats.acSubmissionNum;
+    const totalSolved = submissions.find((x) => x.difficulty === "All").count;
+
+    // 3) fetch the list of solved questions
+    const { userProgressQuestionList } = await gql(
+      {
+        query: `
+        query($skip: Int!, $limit: Int!) {
+          userProgressQuestionList(filters: { skip: $skip, limit: $limit }) {
+            questions {
+              frontendId title difficulty lastSubmittedAt topicTags { name }
+            }
+          }
+        }`,
+        variables: { skip: 0, limit: totalSolved },
+      },
+      {
+        Referer: "https://leetcode.com/progress/",
+        Accept: "*/*",
+      }
+    );
+
+    const questions = userProgressQuestionList.questions;
+
+    const ids = questions.map((q) => q.frontendId);
+    const docs = await Problem.find({ _id: { $in: ids } })
+      .select("rating")
+      .lean();
+
+    const ratingById = docs.reduce((m, { _id, rating }) => {
+      m[_id] = rating;
+      return m;
+    }, {});
+
+    let ratingSum = 0;
+    const solvedProblems = questions.map((q) => {
+      const rating = ratingById[q.frontendId] || 0;
+      ratingSum += rating;
+      return {
+        problemId: q.frontendId,
+        difficulty: q.difficulty,
+        lastSubmittedAt: new Date(q.lastSubmittedAt),
+        topicTags: q.topicTags.map((t) => t.name),
+        ratingAtSolve: rating,
+      };
+    });
+
+    const averageRating = ratingSum / solvedProblems.length || 0;
+
+    const userData = {
+      sessionToken: LEETCODE_SESSION,
+      csrfToken: CSRFToken,
+      leetcodeUserName: username,
+      leetcodeAvatar: avatar,
+      totalProblemsSolved: totalSolved,
+      leetcodeSubmissions: submissions,
+      averageRating: parseFloat(averageRating.toFixed(2)),
+      solvedProblems,
+    };
+
+    const user = await User.findOneAndUpdate(
+      { leetcodeUserName: username },
+      userData,
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    return res.json({ message: "Data synced successfully", user });
+  } catch (err) {
+    next(err);
+  }
 });
 
 app.post("/rate", async (req, res) => {

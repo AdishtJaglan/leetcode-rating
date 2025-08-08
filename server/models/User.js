@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import SolvedProblemSchema from "./SolvedProblem";
+import SolvedProblemSchema from "./SolvedProblem.js";
 
 const UserSchema = new Schema(
   {
@@ -8,6 +8,16 @@ const UserSchema = new Schema(
       required: true,
       unique: true,
     },
+    leetcodeAvatar: {
+      type: String,
+    },
+    leetcodeSubmissions: [
+      {
+        difficulty: String,
+        count: Number,
+        submissions: Number,
+      },
+    ],
     sessionToken: {
       type: String,
     },
@@ -24,4 +34,4 @@ const UserSchema = new Schema(
   { timestamps: true }
 );
 
-export default model("UserSchema", UserSchema);
+export default model("User", UserSchema);

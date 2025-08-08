@@ -2,9 +2,13 @@ import { Schema } from "mongoose";
 
 const SolvedProblemSchema = new Schema(
   {
-    problem: {
+    problemId: {
       type: String,
       ref: "Problem",
+      required: true,
+    },
+    difficulty: {
+      type: String,
       required: true,
     },
     lastSubmittedAt: {
