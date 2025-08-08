@@ -2,7 +2,7 @@ import { Schema, model } from "mongoose";
 
 const ProblemSchema = new Schema(
   {
-    id: { type: String, required: true, unique: true },
+    _id: { type: String, required: true },
     title: { type: String, required: true },
     rating: { type: Number },
   },

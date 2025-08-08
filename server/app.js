@@ -159,7 +159,7 @@ app.post("/rate", async (req, res) => {
     }
     const id = match[1];
 
-    const problem = await Problem.findOne({ id });
+    const problem = await Problem.findById(id);
     if (!problem) {
       return res.status(404).json({ error: `No problem found with id ${id}` });
     }
@@ -180,13 +180,13 @@ app.post("/rate-batch", async (req, res) => {
       return m[1];
     });
 
-    const docs = await Problem.find({ id: { $in: ids } })
-      .select("id rating -_id")
+    const docs = await Problem.find({ _id: { $in: ids } })
+      .select("rating _id")
       .lean();
 
-    const ratingById = docs.reduce((m, doc) => {
-      m[doc.id] = doc.rating;
-      return m;
+    const ratingById = docs.reduce((map, { _id, rating }) => {
+      map[_id] = rating;
+      return map;
     }, Object.create(null));
 
     const responseObject = ids.reduce((out, id) => {
