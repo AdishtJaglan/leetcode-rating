@@ -24,6 +24,32 @@ const UserSchema = new Schema(
     csrfToken: {
       type: String,
     },
+    email: {
+      type: String,
+      unique: true,
+      sparse: true,
+      lowercase: true,
+    },
+    passwordHash: {
+      type: String,
+    },
+    localAuthEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    passwordSetAt: {
+      type: Date,
+    },
+    authMethods: {
+      type: [String],
+      default: ["leetcode"],
+    },
+    refreshTokenHash: {
+      type: String,
+    },
+    refreshTokenExpiry: {
+      type: Date,
+    },
     solvedProblems: [SolvedProblemSchema],
     totalProblemsSolved: {
       type: Number,

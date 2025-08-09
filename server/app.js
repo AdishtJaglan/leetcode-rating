@@ -5,6 +5,7 @@ import { configDotenv } from "dotenv";
 
 import userRoutes from "./routes/userRoutes.js";
 import problemRoutes from "./routes/problemRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
 
 import logger from "./utils/logger.js";
 
@@ -32,6 +33,7 @@ app.use(logger);
 
 app.use("/api/user", userRoutes);
 app.use("/api/problem", problemRoutes);
+app.use("/api/auth", authRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "Welcome." });
