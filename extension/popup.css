@@ -255,3 +255,102 @@ h1 {
       0 6px 20px rgba(255, 255, 255, 0.1), 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 }
+
+/* ---- cookie UI ---- */
+#show {
+  margin-top: 12px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0.04)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: white;
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-size: 13px;
+  cursor: pointer;
+  min-width: 140px;
+}
+
+.cookie-container {
+  margin-top: 14px;
+  width: 100%;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 12px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.cookie-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.cookie-label {
+  font-size: 12px;
+  opacity: 0.8;
+  min-width: 110px;
+}
+
+.cookie-value {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: 8px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.token {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono",
+    monospace;
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  user-select: none;
+  cursor: pointer;
+}
+
+.copy-btn {
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+}
+
+.copy-all {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.04)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: white;
+}
+
+.cookie-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.cookie-status {
+  font-size: 12px;
+  opacity: 0.8;
+  margin-left: 6px;
+}

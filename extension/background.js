@@ -1,4 +1,24 @@
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg && msg.action === "getCookiesForPopup") {
+    const getCookie = (name) =>
+      new Promise((resolve) => {
+        chrome.cookies.get({ url: "https://leetcode.com", name }, (cookie) =>
+          resolve(cookie || null)
+        );
+      });
+
+    Promise.all([getCookie("LEETCODE_SESSION"), getCookie("csrftoken")])
+      .then(([sessionCookie, csrfCookie]) => {
+        sendResponse({ sessionCookie, csrfCookie });
+      })
+      .catch((err) => {
+        console.error("Error fetching cookies for popup:", err);
+        sendResponse({ error: err.message });
+      });
+
+    return true;
+  }
+
   if (msg.action === "sendCookies") {
     const getCookie = (name) =>
       new Promise((resolve) => {
