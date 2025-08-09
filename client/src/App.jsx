@@ -1,12 +1,15 @@
-import { Button } from "./components/ui/button";
-function App() {
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import Home from "./pages/Home";
+
+const App = () => {
   return (
-    <>
-      <div>
-        <p className="text-red-800 text-xl">Hello world.</p>
-      </div>
-    </>
+    <Router>
+      <Routes>
+        <Route path="/home" element={<Home />} />
+        <Route path="*" element={<Home />} />
+      </Routes>
+    </Router>
   );
-}
+};
 
 export default App;

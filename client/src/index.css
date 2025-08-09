@@ -118,3 +118,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+#root {
+  width: 100vw;
+  height: 100vh;
+}
