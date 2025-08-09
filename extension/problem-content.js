@@ -16,7 +16,7 @@ if (!slug) {
   const questionTitle = link.innerText.trim();
   console.log("[content] Found question title:", questionTitle);
 
-  fetch("http://localhost:3000/rate", {
+  fetch("http://localhost:3000/api/problem/rate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title: questionTitle }),

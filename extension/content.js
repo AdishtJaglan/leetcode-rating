@@ -1,5 +1,5 @@
 (function () {
-  const BATCH_URL = "http://localhost:3000/rate-batch";
+  const BATCH_URL = "http://localhost:3000/api/problem/rate-batch";
   const ANCHOR_SELECTOR = 'a[href^="/problems/"][target="_self"][id]';
   const TITLE_SELECTOR = "div.ellipsis.line-clamp-1";
 

