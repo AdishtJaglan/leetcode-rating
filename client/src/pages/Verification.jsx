@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 const AuthFlow = () => {
+  const navigate = useNavigate();
   const [authState, setAuthState] = useState("checking"); // checking, needsLogin, needsLeetCode, needsCredentials, authenticated
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -41,7 +43,7 @@ const AuthFlow = () => {
         const { accessToken, refreshToken: newRefreshToken } = response.data;
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("refreshToken", newRefreshToken);
-        setAuthState("authenticated");
+        navigate("/profile");
       }
     } catch (err) {
       console.error("Refresh token verification failed:", err);
@@ -105,23 +107,13 @@ const AuthFlow = () => {
         localStorage.setItem("refreshToken", refreshToken);
 
         setUser(userData);
-        setAuthState("authenticated");
+        navigate("/profile");
       }
     } catch (err) {
       setError(err.response?.data?.message || "Account linking failed");
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    setUser(null);
-    setAuthState("needsLeetCode");
-    setLeetcodeData({ sessionToken: "", csrfToken: "" });
-    setCredentials({ email: "", password: "" });
-    setVerificationToken("");
   };
 
   // Loading screen
@@ -131,45 +123,6 @@ const AuthFlow = () => {
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-white text-lg">Checking authentication...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Authenticated state
-  if (authState === "authenticated") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 to-black flex items-center justify-center p-4">
-        <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-8 w-full max-w-md text-center shadow-lg shadow-cyan-400/10">
-          <div className="mb-6">
-            {user?.leetcodeAvatar && (
-              <img
-                src={user.leetcodeAvatar}
-                alt="Profile"
-                className="w-20 h-20 rounded-full mx-auto mb-4 border-2 border-cyan-400 shadow-lg shadow-cyan-400/25"
-              />
-            )}
-            <h1 className="text-2xl font-bold text-white mb-2">
-              Welcome back!
-            </h1>
-            <p className="text-gray-400">@{user?.leetcodeUserName}</p>
-            {user?.email && (
-              <p className="text-gray-500 text-sm mt-1">{user.email}</p>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            <div className="bg-gradient-to-r from-cyan-400 to-violet-400 p-4 rounded-xl text-black font-semibold">
-              🎯 Ready to analyze LeetCode problems!
-            </div>
-
-            <button
-              onClick={handleLogout}
-              className="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors border border-gray-700"
-            >
-              Logout
-            </button>
-          </div>
         </div>
       </div>
     );
