@@ -1,5 +1,3 @@
-import { config } from "dotenv";
-config();
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
@@ -160,7 +158,6 @@ export const linkAccount = async (req, res, next) => {
       { sub: user._id, username: user.leetcodeUserName, purpose: "auth" },
       { expiresIn: ACCESS_TOKEN_EXPIRES }
     );
-
     return res.status(200).json({
       message: "Account linked successfully",
       accessToken,

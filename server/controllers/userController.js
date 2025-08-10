@@ -116,3 +116,8 @@ export const setUserData = async (req, res, next) => {
     next(err);
   }
 };
+
+export const getDailySolves = async (req, res, next) => {
+  console.log(req?.user);
+  return res.status(200).json({ message: "hit the endpoint yo." });
+};
