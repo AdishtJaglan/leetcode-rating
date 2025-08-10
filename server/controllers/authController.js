@@ -58,7 +58,6 @@ export const verifySessionAndCsrfTokens = async (req, res, next) => {
     try {
       const resp = await axios.post(url, body, { headers });
       data = resp?.data?.data;
-      console.log(resp?.data);
       if (!data || !data.userStatus || !data.userStatus.username) {
         return res
           .status(401)

@@ -13,6 +13,8 @@ configDotenv();
 const app = express();
 const MONGO_URI = process.env.MONGO_URI ?? "mongodb://localhost:27017/flipgame";
 const PORT = process.env.CURR_PORT ?? 3000;
+const CLIENT_URL = process.env.CLIENT_URL;
+const allowedOrigins = ["https://leetcode.com", CLIENT_URL];
 
 mongoose
   .connect(MONGO_URI)
@@ -25,7 +27,18 @@ mongoose
 
 app.use(
   cors({
-    origin: "https://leetcode.com",
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+
+      const normalizedOrigin = origin.replace(/\/$/, "");
+
+      if (allowedOrigins.includes(normalizedOrigin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
   })
 );
 app.use(express.json());
