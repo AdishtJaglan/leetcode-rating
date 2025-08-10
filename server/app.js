@@ -13,7 +13,8 @@ const app = express();
 const MONGO_URI = process.env.MONGO_URI ?? "mongodb://localhost:27017/flipgame";
 const PORT = process.env.CURR_PORT ?? 3000;
 const CLIENT_URL = process.env.CLIENT_URL;
-const allowedOrigins = ["https://leetcode.com", CLIENT_URL];
+const CHROME_EXT_ID = process.env.CHROME_EXT_ID;
+const allowedOrigins = ["https://leetcode.com", CLIENT_URL, CHROME_EXT_ID];
 
 mongoose
   .connect(MONGO_URI)
@@ -24,6 +25,7 @@ mongoose
     console.error("Error connecting to DB:" + error.message);
   });
 
+app.use(logger);
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -41,7 +43,6 @@ app.use(
   })
 );
 app.use(express.json());
-app.use(logger);
 
 app.use("/api/user", userRoutes);
 app.use("/api/problem", problemRoutes);
