@@ -70,7 +70,6 @@ const AuthFlow = () => {
         sessionToken: leetcodeData.sessionToken,
         csrfToken: leetcodeData.csrfToken,
       });
-      console.log(response?.data);
       if (response.status === 200) {
         const { verifToken, username, avatar } = response.data;
         setVerificationToken(verifToken);
