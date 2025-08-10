@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-// Configure axios defaults
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 const AuthFlow = () => {
@@ -10,7 +9,6 @@ const AuthFlow = () => {
   const [error, setError] = useState("");
   const [user, setUser] = useState(null);
 
-  // Form states
   const [leetcodeData, setLeetcodeData] = useState({
     sessionToken: "",
     csrfToken: "",
