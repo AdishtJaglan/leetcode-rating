@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import axios from "axios";
 import User from "../models/User.js";
 import Problem from "../models/Problem.js";
@@ -118,6 +119,167 @@ export const setUserData = async (req, res, next) => {
 };
 
 export const getDailySolves = async (req, res, next) => {
-  console.log(req?.user);
-  return res.status(200).json({ message: "hit the endpoint yo." });
+  try {
+    const { sub: id } = req?.user;
+    const results = await User.aggregate([
+      { $match: { _id: new Types.ObjectId(id) } },
+      { $unwind: "$solvedProblems" },
+      {
+        $addFields: {
+          day: {
+            $dateTrunc: {
+              date: "$solvedProblems.lastSubmittedAt",
+              unit: "day",
+              timezone: "Asia/Kolkata",
+            },
+          },
+        },
+      },
+      { $group: { _id: "$day", count: { $sum: 1 } } },
+      { $sort: { _id: 1 } },
+    ]);
+
+    if (!results) {
+      return res.status(404).json({ message: "No data found." });
+    }
+    return res
+      .status(200)
+      .json({ message: "Fetched data", questions: results });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getActiveHours = async (req, res, next) => {
+  try {
+    const { sub: id } = req?.user;
+    const result = await User.aggregate([
+      { $match: { _id: new Types.ObjectId(id) } },
+      { $unwind: "$solvedProblems" },
+      {
+        $project: {
+          hour: {
+            $hour: {
+              date: "$solvedProblems.lastSubmittedAt",
+              timezone: "Asia/Kolkata",
+            },
+          },
+        },
+      },
+      { $group: { _id: "$hour", count: { $sum: 1 } } },
+      { $sort: { _id: 1 } }, // 0..23
+    ]);
+    if (!result) return res.status(404).json({ message: "No data found." });
+    return res.status(200).json({ message: "Fetched data", questions: result });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// TODO: is kinda broken
+export const getDifficultyDist = async (req, res, next) => {
+  try {
+    const { sub: id } = req?.user;
+
+    const result = await User.aggregate([
+      { $match: { _id: new Types.ObjectId(id) } },
+      { $unwind: "$solvedProblems" },
+      {
+        $group: {
+          _id: "$solvedProblems.problemId",
+          difficulty: { $first: "$solvedProblems.difficulty" },
+        },
+      },
+      {
+        $group: {
+          _id: "$difficulty",
+          count: { $sum: 1 },
+        },
+      },
+
+      { $sort: { count: -1 } },
+    ]);
+
+    if (!result.length) {
+      return res.status(404).json({ message: "No data found." });
+    }
+
+    return res.status(200).json({
+      message: "Fetched data",
+      questions: result,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getRatingDist = async (req, res, next) => {
+  try {
+    const { sub: id } = req?.user;
+    const result = await User.aggregate([
+      { $match: { _id: new Types.ObjectId(id) } },
+      { $unwind: "$solvedProblems" },
+      {
+        $addFields: {
+          month: {
+            $dateTrunc: {
+              date: "$solvedProblems.lastSubmittedAt",
+              unit: "month",
+              timezone: "Asia/Kolkata",
+            },
+          },
+        },
+      },
+      {
+        $group: {
+          _id: "$month",
+          avgRating: { $avg: "$solvedProblems.ratingAtSolve" },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+    if (!result) return res.status(404).json({ message: "No data found." });
+    return res.status(200).json({ message: "Fetched data", questions: result });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getDailySolveRating = async (req, res, next) => {
+  try {
+    const { sub: id } = req?.user;
+    const result = await User.aggregate([
+      { $match: { _id: new Types.ObjectId(id) } },
+      { $unwind: "$solvedProblems" },
+      {
+        $addFields: {
+          day: {
+            $dateTrunc: {
+              date: "$solvedProblems.lastSubmittedAt",
+              unit: "day",
+              timezone: "Asia/Kolkata",
+            },
+          },
+        },
+      },
+      {
+        $group: {
+          _id: "$day",
+          avgRating: { $avg: "$solvedProblems.ratingAtSolve" },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+    if (!result) return res.status(404).json({ message: "No data found." });
+    return res.status(200).json({ message: "Fetched data", questions: result });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
 };
