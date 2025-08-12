@@ -224,7 +224,7 @@ export const getDifficultyDist = async (req, res, next) => {
 };
 
 // shows number of questions solved for each rating range
-// TODO create a bar chart with this data
+// TODO [client] create a bar chart with this data
 // GET /user/rating-dist
 export const getRatingDist = async (req, res, next) => {
   try {
@@ -340,6 +340,7 @@ export const getRatingDist = async (req, res, next) => {
 };
 
 // average rating of questions solved daily
+// TODO [client] create a line chart showing avg rating of question solved for each day.
 // GET /user/rating-daily
 export const getDailySolveRating = async (req, res, next) => {
   try {
@@ -363,6 +364,14 @@ export const getDailySolveRating = async (req, res, next) => {
           _id: "$day",
           avgRating: { $avg: "$solvedProblems.ratingAtSolve" },
           count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          date: "$_id",
+          avgRating: 1,
+          count: 1,
         },
       },
       { $sort: { _id: 1 } },
