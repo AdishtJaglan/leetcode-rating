@@ -3,6 +3,8 @@ import axios from "axios";
 import User from "../models/User.js";
 import Problem from "../models/Problem.js";
 
+// setting user data [intial]
+// POST /user/data
 export const setUserData = async (req, res, next) => {
   try {
     const { cookies } = req.body;
@@ -118,6 +120,8 @@ export const setUserData = async (req, res, next) => {
   }
 };
 
+// number of question solved on a given day
+// GET /user/daily-solve
 export const getDailySolves = async (req, res, next) => {
   try {
     const { sub: id } = req?.user;
@@ -151,6 +155,8 @@ export const getDailySolves = async (req, res, next) => {
   }
 };
 
+// most active hours [UTC]
+// GET /user/active-hours
 export const getActiveHours = async (req, res, next) => {
   try {
     const { sub: id } = req?.user;
@@ -178,6 +184,8 @@ export const getActiveHours = async (req, res, next) => {
   }
 };
 
+// average no easy - medium - hard questions solved
+// GET /user/difficulty-dist
 export const getDifficultyDist = async (req, res, next) => {
   try {
     const { sub: id } = req?.user;
@@ -215,6 +223,8 @@ export const getDifficultyDist = async (req, res, next) => {
   }
 };
 
+// TODO show number of questions solved for each rating range
+// GET /user/rating-dist
 export const getRatingDist = async (req, res, next) => {
   try {
     const { sub: id } = req?.user;
@@ -249,6 +259,8 @@ export const getRatingDist = async (req, res, next) => {
   }
 };
 
+// average rating of questions solved daily
+// GET /user/rating-daily
 export const getDailySolveRating = async (req, res, next) => {
   try {
     const { sub: id } = req?.user;
