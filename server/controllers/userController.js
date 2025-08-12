@@ -223,36 +223,116 @@ export const getDifficultyDist = async (req, res, next) => {
   }
 };
 
-// TODO show number of questions solved for each rating range
+// shows number of questions solved for each rating range
+// TODO create a bar chart with this data
 // GET /user/rating-dist
 export const getRatingDist = async (req, res, next) => {
   try {
     const { sub: id } = req?.user;
-    const result = await User.aggregate([
-      { $match: { _id: new Types.ObjectId(id) } },
+    const objectId = new Types.ObjectId(id);
+
+    const boundaries = [0, 500];
+    for (let r = 600; r <= 2800; r += 100) boundaries.push(r);
+    boundaries.push(10000000);
+
+    const labels = [];
+    for (let i = 0; i < boundaries.length - 1; i++) {
+      const lo = boundaries[i];
+      const hi = boundaries[i + 1] - 1;
+      if (i === boundaries.length - 2) labels.push(`${lo}+`);
+      else labels.push(`${lo}-${hi}`);
+    }
+
+    const pipeline = [
+      { $match: { _id: objectId } },
       { $unwind: "$solvedProblems" },
       {
+        $group: {
+          _id: "$solvedProblems.problemId",
+          rating: { $first: "$solvedProblems.ratingAtSolve" },
+        },
+      },
+      {
         $addFields: {
-          month: {
-            $dateTrunc: {
-              date: "$solvedProblems.lastSubmittedAt",
-              unit: "month",
-              timezone: "Asia/Kolkata",
-            },
+          rating: {
+            $cond: [
+              { $ifNull: ["$rating", false] },
+              { $toDouble: "$rating" },
+              0,
+            ],
           },
         },
       },
       {
-        $group: {
-          _id: "$month",
-          avgRating: { $avg: "$solvedProblems.ratingAtSolve" },
-          count: { $sum: 1 },
+        $bucket: {
+          groupBy: "$rating",
+          boundaries: boundaries,
+          default: "Other",
+          output: {
+            count: { $sum: 1 },
+          },
         },
       },
-      { $sort: { _id: 1 } },
-    ]);
-    if (!result) return res.status(404).json({ message: "No data found." });
-    return res.status(200).json({ message: "Fetched data", questions: result });
+      {
+        $addFields: {
+          lowerBound: { $cond: [{ $eq: ["$_id", "Other"] }, null, "$_id"] },
+        },
+      },
+      {
+        $addFields: {
+          bucketIndex: {
+            $cond: [
+              { $eq: ["$lowerBound", null] },
+              -1,
+              { $indexOfArray: [boundaries, "$lowerBound"] },
+            ],
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          label: {
+            $cond: [
+              { $eq: ["$bucketIndex", -1] },
+              "Other",
+              { $arrayElemAt: [labels, "$bucketIndex"] },
+            ],
+          },
+          min: "$lowerBound",
+          max: {
+            $cond: [
+              {
+                $or: [
+                  { $eq: ["$bucketIndex", -1] },
+                  { $eq: ["$bucketIndex", labels.length - 1] },
+                ],
+              },
+              null,
+              {
+                $subtract: [
+                  { $arrayElemAt: [boundaries, { $add: ["$bucketIndex", 1] }] },
+                  1,
+                ],
+              },
+            ],
+          },
+          count: 1,
+        },
+      },
+      { $sort: { min: 1 } },
+    ];
+
+    const result = await User.aggregate(pipeline);
+
+    if (!result || result.length === 0) {
+      return res.status(404).json({ message: "No data found." });
+    }
+
+    return res.status(200).json({
+      message: "Fetched data",
+      buckets: result,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
