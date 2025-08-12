@@ -185,6 +185,7 @@ export const getActiveHours = async (req, res, next) => {
 };
 
 // average no easy - medium - hard questions solved
+// TODO [client] create a radial chart with this
 // GET /user/difficulty-dist
 export const getDifficultyDist = async (req, res, next) => {
   try {
@@ -205,7 +206,13 @@ export const getDifficultyDist = async (req, res, next) => {
           count: { $sum: 1 },
         },
       },
-
+      {
+        $project: {
+          _id: 0,
+          difficulty: "$_id",
+          count: 1,
+        },
+      },
       { $sort: { count: -1 } },
     ]);
 
