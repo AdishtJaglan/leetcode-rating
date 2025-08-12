@@ -2,6 +2,8 @@ import { Types } from "mongoose";
 import Problem from "../models/Problem.js";
 import User from "../models/User.js";
 
+// POST /problem/rate
+// send problem ID to get its rating
 export const rateOneProblem = async (req, res, next) => {
   try {
     const { title } = req.body;
@@ -27,6 +29,8 @@ export const rateOneProblem = async (req, res, next) => {
   }
 };
 
+// POST /problem/rate-batch
+// send bunch of problem IDs to get their corresponding ratings
 export const rateManyProblems = async (req, res, next) => {
   try {
     const questions = req.body.questions || [];
@@ -56,6 +60,8 @@ export const rateManyProblems = async (req, res, next) => {
   }
 };
 
+// GET /problem/solved-problems
+// get a list of recently solved problems [supports pagination]
 export const getSolvedProblems = async (req, res, next) => {
   try {
     const { sub: id } = req?.user;
@@ -102,6 +108,8 @@ export const getSolvedProblems = async (req, res, next) => {
   }
 };
 
+// GET /problem/tags
+// get a list of topic tags pertaining to the questions solved by the user
 export const getProblemTags = async (req, res, next) => {
   try {
     const { sub: id } = req?.user;
