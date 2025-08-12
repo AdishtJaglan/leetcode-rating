@@ -121,6 +121,7 @@ export const setUserData = async (req, res, next) => {
 };
 
 // number of question solved on a given day
+// TODO [client] heatmap
 // GET /user/daily-solve
 export const getDailySolves = async (req, res, next) => {
   try {
@@ -140,6 +141,13 @@ export const getDailySolves = async (req, res, next) => {
         },
       },
       { $group: { _id: "$day", count: { $sum: 1 } } },
+      {
+        $project: {
+          _id: 0,
+          date: "$_id",
+          count: 1,
+        },
+      },
       { $sort: { _id: 1 } },
     ]);
 
