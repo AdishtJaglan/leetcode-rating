@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { useState, useEffect } from "react";
 import { ChartAreaInteractive } from "@/components/HeroChart";
+import QuestionList from "@/components/QuestionList";
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -40,6 +41,7 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-black p-8">
       <ChartAreaInteractive data={chartData} />
+      <QuestionList data={questionData} />
     </div>
   );
 };
