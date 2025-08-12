@@ -375,7 +375,6 @@ export const getRatingDist = async (req, res, next) => {
 };
 
 // average rating of questions solved daily
-// TODO [client] create a line chart showing avg rating of question solved for each day.
 // GET /user/rating-daily
 export const getDailySolveRating = async (req, res, next) => {
   try {
@@ -404,14 +403,23 @@ export const getDailySolveRating = async (req, res, next) => {
       {
         $project: {
           _id: 0,
-          date: "$_id",
-          avgRating: 1,
-          count: 1,
+          date: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$_id",
+              timezone: "Asia/Kolkata",
+            },
+          },
+          avgRating: { $round: ["$avgRating", 2] },
         },
       },
-      { $sort: { _id: 1 } },
+      { $sort: { date: 1 } },
     ]);
-    if (!result) return res.status(404).json({ message: "No data found." });
+
+    if (!result.length) {
+      return res.status(404).json({ message: "No data found." });
+    }
+
     return res.status(200).json({ message: "Fetched data", questions: result });
   } catch (error) {
     console.error(error);
