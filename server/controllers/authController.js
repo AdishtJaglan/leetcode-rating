@@ -6,7 +6,7 @@ import User from "../models/User.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const VERIF_TOKEN_EXPIRES = "15m";
-const ACCESS_TOKEN_EXPIRES = "15m";
+const ACCESS_TOKEN_EXPIRES = "45m";
 const REFRESH_TOKEN_EXPIRES_DAYS = 30;
 
 function signJwt(payload, opts = {}) {
