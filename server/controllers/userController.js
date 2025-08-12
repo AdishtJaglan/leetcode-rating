@@ -178,7 +178,6 @@ export const getActiveHours = async (req, res, next) => {
   }
 };
 
-// TODO: is kinda broken
 export const getDifficultyDist = async (req, res, next) => {
   try {
     const { sub: id } = req?.user;
