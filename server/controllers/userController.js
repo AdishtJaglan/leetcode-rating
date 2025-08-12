@@ -156,28 +156,48 @@ export const getDailySolves = async (req, res, next) => {
 };
 
 // most active hours [UTC]
+// TODO [client] Radar chart maybe
 // GET /user/active-hours
 export const getActiveHours = async (req, res, next) => {
   try {
     const { sub: id } = req?.user;
-    const result = await User.aggregate([
-      { $match: { _id: new Types.ObjectId(id) } },
+    const objectId = new Types.ObjectId(id);
+
+    const agg = await User.aggregate([
+      { $match: { _id: objectId } },
       { $unwind: "$solvedProblems" },
       {
         $project: {
-          hour: {
-            $hour: {
-              date: "$solvedProblems.lastSubmittedAt",
-              timezone: "Asia/Kolkata",
-            },
+          hourUtc: {
+            $hour: { date: "$solvedProblems.lastSubmittedAt", timezone: "UTC" },
           },
         },
       },
-      { $group: { _id: "$hour", count: { $sum: 1 } } },
-      { $sort: { _id: 1 } }, // 0..23
+      { $group: { _id: "$hourUtc", count: { $sum: 1 } } },
+      { $sort: { _id: 1 } },
+      {
+        $project: {
+          _id: 0,
+          hour: "$_id",
+          count: 1,
+        },
+      },
     ]);
-    if (!result) return res.status(404).json({ message: "No data found." });
-    return res.status(200).json({ message: "Fetched data", questions: result });
+
+    const countsByHour = new Array(24).fill(0);
+    for (const row of agg) {
+      const h = Number(row.hour);
+      if (!Number.isNaN(h) && h >= 0 && h <= 23) countsByHour[h] = row.count;
+    }
+
+    const hours = countsByHour.map((count, hour) => {
+      const hh = String(hour).padStart(2, "0");
+      const iso = `1970-01-01T${hh}:00:00Z`;
+      const label = `${hh}:00 UTC`;
+      return { hour, iso, label, count };
+    });
+
+    return res.status(200).json({ message: "Fetched data", hours });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
