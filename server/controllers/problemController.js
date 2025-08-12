@@ -1,6 +1,8 @@
+import { Types } from "mongoose";
 import Problem from "../models/Problem.js";
+import User from "../models/User.js";
 
-export const rateOneProblem = async (req, res) => {
+export const rateOneProblem = async (req, res, next) => {
   try {
     const { title } = req.body;
     if (typeof title !== "string") {
@@ -25,7 +27,7 @@ export const rateOneProblem = async (req, res) => {
   }
 };
 
-export const rateManyProblems = async (req, res) => {
+export const rateManyProblems = async (req, res, next) => {
   try {
     const questions = req.body.questions || [];
     const ids = questions.map((q) => {
@@ -51,5 +53,80 @@ export const rateManyProblems = async (req, res) => {
     res.json({ message: "received.", data: responseObject });
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+};
+
+export const getSolvedProblems = async (req, res, next) => {
+  try {
+    const { sub: id } = req?.user;
+    const page = Math.max(1, parseInt(req.query.page || "1", 10));
+    const limit = Math.max(
+      1,
+      Math.min(100, parseInt(req.query.limit || "20", 10))
+    );
+    const skip = (page - 1) * limit;
+
+    const agg = await User.aggregate([
+      { $match: { _id: new Types.ObjectId(id) } },
+      { $project: { count: { $size: { $ifNull: ["$solvedProblems", []] } } } },
+    ]);
+    const totalCount = (agg[0] && agg[0].count) || 0;
+    const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+
+    const user = await User.findById(id)
+      .select("solvedProblems")
+      .slice("solvedProblems", [skip, limit])
+      .populate("solvedProblems.problemId", "title")
+      .lean();
+
+    const solvedProblems = (user?.solvedProblems || []).map((sp) => ({
+      problemId: sp.problemId?._id ?? sp.problemId,
+      title: sp.problemId?.title,
+      difficulty: sp.difficulty,
+      lastSubmittedAt: sp.lastSubmittedAt,
+      ratingAtSolve: sp.ratingAtSolve,
+      topicTags: sp.topicTags,
+    }));
+
+    return res.status(200).json({
+      meta: {
+        page,
+        limit,
+        totalCount,
+        totalPages,
+      },
+      data: solvedProblems,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "boom", error: error?.message });
+  }
+};
+
+export const getProblemTags = async (req, res, next) => {
+  try {
+    const { sub: id } = req?.user;
+
+    const agg = await User.aggregate([
+      { $match: { _id: new Types.ObjectId(id) } },
+      { $project: { solvedProblems: 1 } },
+      { $unwind: "$solvedProblems" },
+      { $unwind: "$solvedProblems.topicTags" },
+      {
+        $group: {
+          _id: { $toLower: "$solvedProblems.topicTags" },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+    ]);
+
+    const tagCounts = (agg || []).reduce((acc, cur) => {
+      acc[cur._id] = cur.count;
+      return acc;
+    }, {});
+
+    return res.status(200).json({ data: tagCounts });
+  } catch (error) {
+    return res.status(500).json({ message: "boom", error: error?.message });
   }
 };
