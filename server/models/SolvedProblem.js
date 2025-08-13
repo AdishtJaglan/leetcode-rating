@@ -11,6 +11,10 @@ const SolvedProblemSchema = new Schema(
       type: String,
       required: true,
     },
+    slug: {
+      type: String,
+      required: true,
+    },
     lastSubmittedAt: {
       type: Date,
       required: true,

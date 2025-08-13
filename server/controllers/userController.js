@@ -58,7 +58,7 @@ export const setUserData = async (req, res, next) => {
         query($skip: Int!, $limit: Int!) {
           userProgressQuestionList(filters: { skip: $skip, limit: $limit }) {
             questions {
-              frontendId title difficulty lastSubmittedAt topicTags { name }
+              frontendId title difficulty lastSubmittedAt titleSlug questionStatus lastResult topicTags  { name }
             }
           }
         }`,
@@ -70,7 +70,9 @@ export const setUserData = async (req, res, next) => {
       }
     );
 
-    const questions = userProgressQuestionList.questions;
+    const questions = userProgressQuestionList.questions.filter(
+      (q) => q.questionStatus === "SOLVED"
+    );
 
     const ids = questions.map((q) => q.frontendId);
     const docs = await Problem.find({ _id: { $in: ids } })
@@ -88,6 +90,7 @@ export const setUserData = async (req, res, next) => {
       ratingSum += rating;
       return {
         problemId: q.frontendId,
+        slug: q?.titleSlug,
         difficulty: q.difficulty,
         lastSubmittedAt: new Date(q.lastSubmittedAt),
         topicTags: q.topicTags.map((t) => t.name),
