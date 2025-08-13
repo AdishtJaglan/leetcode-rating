@@ -429,3 +429,16 @@ export const getDailySolveRating = async (req, res, next) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+export const getBasicUserData = async (req, res, next) => {
+  try {
+    const { sub: id } = req?.user;
+    const user = await User.findById(id)
+      .select("-_id leetcodeUserName leetcodeAvatar")
+      .lean();
+    console.log(user);
+    return res.status(200).json({ message: "Fetched.", user });
+  } catch (error) {
+    return res.stats(500).json({ message: "Error fetching user data.", error });
+  }
+};

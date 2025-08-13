@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   getActiveHours,
+  getBasicUserData,
   getDailySolveRating,
   getDailySolves,
   getDifficultyDist,
@@ -16,5 +17,6 @@ router.get("/active-hours", verifyJwt(), getActiveHours);
 router.get("/difficulty-dist", verifyJwt(), getDifficultyDist);
 router.get("/rating-dist", verifyJwt(), getRatingDist);
 router.get("/rating-daily", verifyJwt(), getDailySolveRating);
+router.get("/data", verifyJwt(), getBasicUserData);
 
 export default router;
