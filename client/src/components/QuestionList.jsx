@@ -90,10 +90,10 @@ const QuestionList = ({
     return title.replace(new RegExp(`^${problemId}\\.\\s*`), "");
   };
 
-  const totalPages = Math.ceil(data.length / itemsPerPage);
+  const totalPages = Math.ceil(data?.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentData = data.slice(startIndex, endIndex);
+  const currentData = data?.slice(startIndex, endIndex);
 
   const goToPage = (page) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
@@ -123,7 +123,7 @@ const QuestionList = ({
 
           {/* Table Body */}
           <div>
-            {currentData.map((problem, index) => {
+            {currentData?.map((problem, index) => {
               const ratingStyle = getRatingColor(problem.ratingAtSolve);
               const difficultyColor = getDifficultyColor(problem.difficulty);
 
@@ -204,7 +204,7 @@ const QuestionList = ({
                     <ChevronLeft size={16} />
                   </button>
 
-                  {[...Array(totalPages)].map((_, i) => (
+                  {[...Array(totalPages)]?.map((_, i) => (
                     <button
                       key={i + 1}
                       onClick={() => goToPage(i + 1)}
