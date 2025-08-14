@@ -94,10 +94,18 @@ export const setUserData = async (req, res, next) => {
     const { userProgressQuestionList } = await gql(
       {
         query: `
-        query($skip: Int!, $limit: Int!) {
+         query($skip: Int!, $limit: Int!) {
           userProgressQuestionList(filters: { skip: $skip, limit: $limit }) {
             questions {
-              frontendId title difficulty lastSubmittedAt titleSlug questionStatus lastResult topicTags  { name }
+              frontendId
+              title
+              difficulty
+              lastSubmittedAt
+              titleSlug
+              questionStatus
+              lastResult
+              numSubmitted
+              topicTags { name }
             }
           }
         }`,
@@ -109,11 +117,16 @@ export const setUserData = async (req, res, next) => {
       }
     );
 
-    const questions = userProgressQuestionList.questions.filter(
+    const allQuestions = userProgressQuestionList.questions;
+
+    const solvedQuestions = allQuestions.filter(
       (q) => q.questionStatus === "SOLVED"
     );
+    const failedQuestions = allQuestions.filter(
+      (q) => q.questionStatus !== "SOLVED"
+    );
 
-    const ids = questions.map((q) => q.frontendId);
+    const ids = allQuestions.map((q) => q.frontendId);
     const docs = await Problem.find({ _id: { $in: ids } })
       .select("rating")
       .lean();
@@ -124,20 +137,40 @@ export const setUserData = async (req, res, next) => {
     }, {});
 
     let ratingSum = 0;
-    const solvedProblems = questions.map((q) => {
+    const solvedProblems = solvedQuestions.map((q) => {
       const rating = ratingById[q.frontendId] || 0;
       ratingSum += rating;
       return {
-        problemId: q.frontendId,
+        problemId: q?.frontendId,
         slug: q?.titleSlug,
-        difficulty: q.difficulty,
-        lastSubmittedAt: new Date(q.lastSubmittedAt),
-        topicTags: q.topicTags.map((t) => t.name),
+        difficulty: q?.difficulty,
+        lastSubmittedAt: new Date(q?.lastSubmittedAt),
+        topicTags: q?.topicTags.map((t) => t.name),
         ratingAtSolve: rating,
+        numSubmitted: q?.numSubmitted,
       };
     });
 
-    const averageRating = ratingSum / solvedProblems.length || 0;
+    const averageRating = solvedProblems.length
+      ? ratingSum / solvedProblems.length
+      : 0;
+
+    const failedProblems = failedQuestions.map((q) => {
+      const rating = ratingById[String(q.frontendId)] || 0;
+      return {
+        problemId: String(q.frontendId),
+        difficulty: q.difficulty || "Unknown",
+        slug: q?.titleSlug || "",
+        lastSubmittedAt: q.lastSubmittedAt
+          ? new Date(q.lastSubmittedAt)
+          : new Date(),
+        ratingAtAttempt: rating,
+        topicTags: Array.isArray(q.topicTags)
+          ? q.topicTags.map((t) => t.name)
+          : [],
+        numSubmitted: q?.numSubmitted,
+      };
+    });
 
     const userData = {
       sessionToken: LEETCODE_SESSION,
@@ -148,6 +181,7 @@ export const setUserData = async (req, res, next) => {
       leetcodeSubmissions: submissions,
       averageRating: parseFloat(averageRating.toFixed(2)),
       solvedProblems,
+      failedProblems,
       contestMetaData: contestRanking,
     };
 

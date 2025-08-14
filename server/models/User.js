@@ -1,5 +1,6 @@
 import { Schema, model } from "mongoose";
 import SolvedProblemSchema from "./SolvedProblem.js";
+import FailedProblemSchema from "./FailedProblem.js";
 
 const UserSchema = new Schema(
   {
@@ -62,6 +63,7 @@ const UserSchema = new Schema(
       type: Date,
     },
     solvedProblems: [SolvedProblemSchema],
+    failedProblems: [FailedProblemSchema],
     totalProblemsSolved: {
       type: Number,
       default: 0,

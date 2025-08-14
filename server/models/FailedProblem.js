@@ -1,6 +1,6 @@
 import { Schema } from "mongoose";
 
-const SolvedProblemSchema = new Schema(
+const FailedProblemSchema = new Schema(
   {
     problemId: {
       type: String,
@@ -19,7 +19,7 @@ const SolvedProblemSchema = new Schema(
       type: Date,
       required: true,
     },
-    ratingAtSolve: {
+    ratingAtAttempt: {
       type: Number,
       required: true,
     },
@@ -32,4 +32,4 @@ const SolvedProblemSchema = new Schema(
   { _id: false }
 );
 
-export default SolvedProblemSchema;
+export default FailedProblemSchema;
