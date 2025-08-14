@@ -387,7 +387,7 @@ const QuestionList = () => {
             filteredData.map((problem, index) => {
               const ratingStyle = getRatingColor(problem.ratingAtSolve);
               const difficultyColor = getDifficultyColor(problem.difficulty);
-              console.log(problem);
+
               return (
                 <div
                   key={`${problem.problemId}-${index}`}
