@@ -1,33 +1,83 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Search, Filter, X } from "lucide-react";
+import axios from "axios";
+
 import { formatDateReadable } from "@/utils/dateFormatters";
 import getRatingColor from "@/utils/ratingColor";
 import getDifficultyColor from "@/utils/difficultyColor";
 
-const QuestionList = ({ data }) => {
-  const [displayedData, setDisplayedData] = useState([]);
+const API_URL = import.meta.env.VITE_API_URL;
+
+const QuestionList = () => {
+  const [allData, setAllData] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [filteredData, setFilteredData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState("");
   const [selectedTopics, setSelectedTopics] = useState([]);
   const [ratingRange, setRatingRange] = useState({ min: "", max: "" });
   const [showFilters, setShowFilters] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(false);
-
   const loadingRef = useRef(null);
-  const itemsPerLoad = 20;
+
+  const hasActiveFilters = useMemo(
+    () =>
+      !!searchTerm ||
+      !!selectedDifficulty ||
+      selectedTopics.length > 0 ||
+      !!ratingRange.min ||
+      !!ratingRange.max,
+    [searchTerm, selectedDifficulty, selectedTopics, ratingRange]
+  );
+
+  const fetchData = useCallback(async (page = 1, isLoadMore = false) => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+
+    try {
+      if (!isLoadMore) setIsInitialLoading(true);
+      else setIsLoadingMore(true);
+
+      const { data } = await axios.get(`${API_URL}/problem/solved-problems`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { page, limit: 20 },
+      });
+
+      const newProblems = data?.data || [];
+      const meta = data?.meta || {};
+
+      if (isLoadMore) {
+        setAllData((prev) => [...prev, ...newProblems]);
+      } else {
+        setAllData(newProblems);
+      }
+
+      setHasMore(page < meta.totalPages);
+      setCurrentPage(page);
+    } catch (error) {
+      console.error("Error fetching problems:", error);
+    } finally {
+      setIsInitialLoading(false);
+      setIsLoadingMore(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData(1, false);
+  }, [fetchData]);
 
   const cleanTitle = (title, problemId) => {
     return title.replace(new RegExp(`^${problemId}\\.\\s*`), "");
   };
 
   const safeData = useMemo(() => {
-    return data && Array.isArray(data) ? data : [];
-  }, [data]);
+    return Array.isArray(allData) ? allData : [];
+  }, [allData]);
 
-  const isDataLoaded = data && Array.isArray(data);
-  const isEmpty = isDataLoaded && data.length === 0;
+  const isDataLoaded = !isInitialLoading;
+  const isEmpty = isDataLoaded && allData.length === 0;
 
   const allTopics = [
     ...new Set(safeData.flatMap((item) => item.topicTags || [])),
@@ -74,8 +124,6 @@ const QuestionList = ({ data }) => {
     }
 
     setFilteredData(filtered);
-    setCurrentIndex(0);
-    setDisplayedData([]);
   }, [
     safeData,
     searchTerm,
@@ -85,51 +133,39 @@ const QuestionList = ({ data }) => {
     isDataLoaded,
   ]);
 
-  // Load initial items when filtered data changes
-  useEffect(() => {
-    if (filteredData.length > 0) {
-      const initialItems = filteredData.slice(0, itemsPerLoad);
-      setDisplayedData(initialItems);
-      setCurrentIndex(itemsPerLoad);
-    }
-  }, [filteredData]);
-
   // Load more items
   const loadMoreItems = useCallback(() => {
-    if (loading || currentIndex >= filteredData.length || !filteredData.length)
-      return;
+    if (isLoadingMore || !hasMore) return;
+    fetchData(currentPage + 1, true);
+  }, [currentPage, hasMore, isLoadingMore, fetchData]);
 
-    setLoading(true);
-
-    // Simulate network delay
-    setTimeout(() => {
-      const nextItems = filteredData.slice(
-        currentIndex,
-        currentIndex + itemsPerLoad
-      );
-      setDisplayedData((prev) => [...prev, ...nextItems]);
-      setCurrentIndex((prev) => prev + itemsPerLoad);
-      setLoading(false);
-    }, 300);
-  }, [currentIndex, filteredData, loading]);
-
-  // Intersection Observer for infinite scroll
   useEffect(() => {
+    if (hasActiveFilters || !hasMore) {
+      return;
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !loading) {
+        const entry = entries[0];
+
+        if (entry.isIntersecting && !isLoadingMore) {
           loadMoreItems();
         }
       },
       { threshold: 0.1 }
     );
 
-    if (loadingRef.current) {
-      observer.observe(loadingRef.current);
+    const currentLoader = loadingRef.current;
+    if (currentLoader) {
+      observer.observe(currentLoader);
     }
 
-    return () => observer.disconnect();
-  }, [loadMoreItems, loading]);
+    return () => {
+      if (currentLoader) {
+        observer.disconnect();
+      }
+    };
+  }, [hasActiveFilters, hasMore, isLoadingMore, loadMoreItems]);
 
   const toggleTopic = (topic) => {
     setSelectedTopics((prev) =>
@@ -143,13 +179,6 @@ const QuestionList = ({ data }) => {
     setSelectedTopics([]);
     setRatingRange({ min: "", max: "" });
   };
-
-  const hasActiveFilters =
-    searchTerm ||
-    selectedDifficulty ||
-    selectedTopics.length > 0 ||
-    ratingRange.min ||
-    ratingRange.max;
 
   // Render loading state
   if (!isDataLoaded) {
@@ -329,9 +358,10 @@ const QuestionList = ({ data }) => {
           </div>
         )}
 
-        {/* Results Count */}
         <div className="text-sm text-gray-400">
-          Showing {displayedData.length} of {filteredData.length} problems
+          {hasActiveFilters
+            ? `Showing ${filteredData.length} of ${allData.length} problems`
+            : `Showing ${allData.length} problems`}
         </div>
       </div>
 
@@ -350,12 +380,12 @@ const QuestionList = ({ data }) => {
 
         {/* Table Body */}
         <div>
-          {displayedData.length === 0 && !loading ? (
+          {filteredData.length === 0 && !isLoadingMore ? (
             <div className="px-6 py-12 text-center text-gray-400">
               No problems found matching your criteria
             </div>
           ) : (
-            displayedData.map((problem, index) => {
+            filteredData.map((problem, index) => {
               const ratingStyle = getRatingColor(problem.ratingAtSolve);
               const difficultyColor = getDifficultyColor(problem.difficulty);
 
@@ -434,19 +464,17 @@ const QuestionList = ({ data }) => {
 
         {/* Loading Indicator */}
         <div ref={loadingRef} className="px-6 py-4 text-center">
-          {loading && (
+          {isLoadingMore && (
             <div className="flex items-center justify-center gap-2 text-gray-400">
               <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
               Loading more problems...
             </div>
           )}
-          {!loading &&
-            currentIndex >= filteredData.length &&
-            filteredData.length > 0 && (
-              <div className="text-gray-400 text-sm">
-                You've reached the end of the list
-              </div>
-            )}
+          {!hasMore && allData.length > 0 && !hasActiveFilters && (
+            <div className="text-gray-400 text-sm">
+              You've reached the end of the list
+            </div>
+          )}
         </div>
       </div>
     </div>
