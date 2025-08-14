@@ -32,41 +32,49 @@ const QuestionList = () => {
     [searchTerm, selectedDifficulty, selectedTopics, ratingRange]
   );
 
-  const fetchData = useCallback(async (page = 1, isLoadMore = false) => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) return;
+  const fetchData = useCallback(
+    async (page = 1, isLoadMore = false) => {
+      if (isLoadingMore) return;
 
-    try {
-      if (!isLoadMore) setIsInitialLoading(true);
-      else setIsLoadingMore(true);
+      const token = localStorage.getItem("accessToken");
+      if (!token) return;
 
-      const { data } = await axios.get(`${API_URL}/problem/solved-problems`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { page, limit: 20 },
-      });
+      try {
+        if (isLoadMore) {
+          setIsLoadingMore(true);
+        } else {
+          setIsInitialLoading(true);
+        }
 
-      const newProblems = data?.data || [];
-      const meta = data?.meta || {};
+        const { data } = await axios.get(`${API_URL}/problem/solved-problems`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { page, limit: 20 },
+        });
 
-      if (isLoadMore) {
-        setAllData((prev) => [...prev, ...newProblems]);
-      } else {
-        setAllData(newProblems);
+        const newProblems = data?.data || [];
+        const meta = data?.meta || {};
+
+        if (isLoadMore) {
+          setAllData((prev) => [...prev, ...newProblems]);
+        } else {
+          setAllData(newProblems);
+        }
+        setCurrentPage(page);
+        setHasMore(page < meta.totalPages);
+      } catch (error) {
+        console.error("Error fetching problems:", error);
+      } finally {
+        setIsInitialLoading(false);
+        setIsLoadingMore(false);
       }
-
-      setHasMore(page < meta.totalPages);
-      setCurrentPage(page);
-    } catch (error) {
-      console.error("Error fetching problems:", error);
-    } finally {
-      setIsInitialLoading(false);
-      setIsLoadingMore(false);
-    }
-  }, []);
+    },
+    [isLoadingMore]
+  );
 
   useEffect(() => {
     fetchData(1, false);
-  }, [fetchData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); //! Intentionally run only once on mount
 
   const cleanTitle = (title, problemId) => {
     return title.replace(new RegExp(`^${problemId}\\.\\s*`), "");
@@ -88,7 +96,6 @@ const QuestionList = () => {
 
     let filtered = [...safeData];
 
-    // Search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -122,7 +129,6 @@ const QuestionList = () => {
         return rating >= min && rating <= max;
       });
     }
-
     setFilteredData(filtered);
   }, [
     safeData,
@@ -133,14 +139,13 @@ const QuestionList = () => {
     isDataLoaded,
   ]);
 
-  // Load more items
   const loadMoreItems = useCallback(() => {
     if (isLoadingMore || !hasMore) return;
     fetchData(currentPage + 1, true);
   }, [currentPage, hasMore, isLoadingMore, fetchData]);
 
   useEffect(() => {
-    if (hasActiveFilters || !hasMore) {
+    if (hasActiveFilters || !hasMore || isInitialLoading) {
       return;
     }
 
@@ -152,7 +157,7 @@ const QuestionList = () => {
           loadMoreItems();
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.5 } // Trigger when 50% of the loader is visible
     );
 
     const currentLoader = loadingRef.current;
@@ -165,7 +170,13 @@ const QuestionList = () => {
         observer.disconnect();
       }
     };
-  }, [hasActiveFilters, hasMore, isLoadingMore, loadMoreItems]);
+  }, [
+    hasActiveFilters,
+    hasMore,
+    isInitialLoading,
+    isLoadingMore,
+    loadMoreItems,
+  ]);
 
   const toggleTopic = (topic) => {
     setSelectedTopics((prev) =>
@@ -180,8 +191,7 @@ const QuestionList = () => {
     setRatingRange({ min: "", max: "" });
   };
 
-  // Render loading state
-  if (!isDataLoaded) {
+  if (!isDataLoaded && isInitialLoading) {
     return (
       <div className="w-full mt-8 p-6">
         <div className="mb-6">
@@ -204,7 +214,6 @@ const QuestionList = () => {
     );
   }
 
-  // Render empty state
   if (isEmpty) {
     return (
       <div className="w-full mt-8 p-6">
@@ -227,7 +236,6 @@ const QuestionList = () => {
 
   return (
     <div className="w-full mt-8 p-6">
-      {/* Section Header */}
       <div className="mb-6">
         <h3 className="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
           Recently Solved Problems
@@ -237,9 +245,7 @@ const QuestionList = () => {
         </p>
       </div>
 
-      {/* Search and Filters */}
       <div className="mb-6 space-y-4">
-        {/* Search Bar */}
         <div
           className={`flex items-center justify-start gap-${
             hasActiveFilters ? "4" : "2"
@@ -252,7 +258,7 @@ const QuestionList = () => {
             <Filter size={16} />
             Filters
           </button>
-          {/* Filter Toggle */}
+
           <div className="flex items-center justify-between">
             {hasActiveFilters && (
               <button
@@ -279,11 +285,9 @@ const QuestionList = () => {
           </div>
         </div>
 
-        {/* Filter Panel */}
         {showFilters && (
           <div className="bg-gradient-to-br from-gray-950/20 to-gray-900/10 border border-gray-800/20 rounded-lg p-4 backdrop-blur-sm">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Difficulty Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Difficulty
@@ -300,7 +304,6 @@ const QuestionList = () => {
                 </select>
               </div>
 
-              {/* Rating Range */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Rating Range
@@ -333,7 +336,6 @@ const QuestionList = () => {
                 </div>
               </div>
 
-              {/* Topic Filter */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Topics
@@ -360,14 +362,12 @@ const QuestionList = () => {
 
         <div className="text-sm text-gray-400">
           {hasActiveFilters
-            ? `Showing ${filteredData.length} of ${allData.length} problems`
-            : `Showing ${allData.length} problems`}
+            ? `Showing ${filteredData.length} of ${allData.length} loaded problems`
+            : `Showing ${allData.length} loaded problems`}
         </div>
       </div>
 
-      {/* Table Container */}
       <div className="bg-gradient-to-br from-gray-950/20 to-gray-900/10 border border-gray-800/20 rounded-2xl backdrop-blur-sm overflow-hidden">
-        {/* Table Header */}
         <div className="border-b border-gray-800/30 bg-gray-950/30">
           <div className="grid grid-cols-12 gap-6 px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-wide">
             <div className="col-span-2">Last Solved</div>
@@ -378,7 +378,6 @@ const QuestionList = () => {
           </div>
         </div>
 
-        {/* Table Body */}
         <div>
           {filteredData.length === 0 && !isLoadingMore ? (
             <div className="px-6 py-12 text-center text-gray-400">
@@ -394,14 +393,12 @@ const QuestionList = () => {
                   key={`${problem.problemId}-${index}`}
                   className="grid grid-cols-12 gap-6 px-6 py-4 hover:bg-gray-800/20 border-b border-gray-800/50 last:border-b-0 transition-all duration-200 hover:backdrop-blur-sm"
                 >
-                  {/* Last Submitted */}
                   <div className="col-span-2">
                     <span className="text-gray-300 text-sm">
                       {formatDateReadable(problem.lastSubmittedAt)}
                     </span>
                   </div>
 
-                  {/* Rating */}
                   <div className="col-span-2">
                     <div className="flex items-center gap-2">
                       <div
@@ -428,20 +425,18 @@ const QuestionList = () => {
                     </div>
                   </div>
 
-                  {/* Problem ID */}
                   <div className="col-span-1">
                     <span className="text-gray-400 text-sm font-mono">
                       {problem.problemId}
                     </span>
                   </div>
 
-                  {/* Title */}
                   <div className="col-span-5">
                     <div className="group relative">
                       <span className="text-white text-sm hover:text-gray-200 transition-colors cursor-pointer">
                         {cleanTitle(problem.title, problem.problemId)}
                       </span>
-                      {/* Topic Tags Tooltip */}
+
                       <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-10">
                         <div className="bg-gray-800/95 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap backdrop-blur-md border border-gray-700/50 shadow-xl">
                           {problem.topicTags?.join(", ")}
@@ -450,7 +445,6 @@ const QuestionList = () => {
                     </div>
                   </div>
 
-                  {/* Difficulty */}
                   <div className="col-span-2">
                     <span className={`text-sm font-medium ${difficultyColor}`}>
                       {problem.difficulty}
@@ -462,7 +456,6 @@ const QuestionList = () => {
           )}
         </div>
 
-        {/* Loading Indicator */}
         <div ref={loadingRef} className="px-6 py-4 text-center">
           {isLoadingMore && (
             <div className="flex items-center justify-center gap-2 text-gray-400">
