@@ -92,6 +92,7 @@ export const getSolvedProblems = async (req, res, next) => {
       lastSubmittedAt: sp.lastSubmittedAt,
       ratingAtSolve: sp.ratingAtSolve,
       topicTags: sp.topicTags,
+      slug: sp.slug,
     }));
 
     return res.status(200).json({

@@ -53,7 +53,7 @@ const QuestionList = () => {
 
         const newProblems = data?.data || [];
         const meta = data?.meta || {};
-
+        console.log(newProblems);
         if (isLoadMore) {
           setAllData((prev) => [...prev, ...newProblems]);
         } else {
@@ -387,7 +387,7 @@ const QuestionList = () => {
             filteredData.map((problem, index) => {
               const ratingStyle = getRatingColor(problem.ratingAtSolve);
               const difficultyColor = getDifficultyColor(problem.difficulty);
-
+              console.log(problem);
               return (
                 <div
                   key={`${problem.problemId}-${index}`}
@@ -433,9 +433,14 @@ const QuestionList = () => {
 
                   <div className="col-span-5">
                     <div className="group relative">
-                      <span className="text-white text-sm hover:text-gray-200 transition-colors cursor-pointer">
+                      <a
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        href={`https://leetcode.com/problems/${problem?.slug}/`}
+                        className="text-white text-sm hover:text-gray-400 transition-colors cursor-pointer"
+                      >
                         {cleanTitle(problem.title, problem.problemId)}
-                      </span>
+                      </a>
 
                       <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-10">
                         <div className="bg-gray-800/95 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap backdrop-blur-md border border-gray-700/50 shadow-xl">
