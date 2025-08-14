@@ -53,7 +53,7 @@ const QuestionList = () => {
 
         const newProblems = data?.data || [];
         const meta = data?.meta || {};
-        console.log(newProblems);
+
         if (isLoadMore) {
           setAllData((prev) => [...prev, ...newProblems]);
         } else {
