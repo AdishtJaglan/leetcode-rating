@@ -138,16 +138,21 @@ export const setUserData = async (req, res, next) => {
 
     let ratingSum = 0;
     const solvedProblems = solvedQuestions.map((q) => {
-      const rating = ratingById[q.frontendId] || 0;
+      const rating = ratingById[String(q.frontendId)] || 0;
       ratingSum += rating;
       return {
-        problemId: q?.frontendId,
-        slug: q?.titleSlug,
-        difficulty: q?.difficulty,
-        lastSubmittedAt: new Date(q?.lastSubmittedAt),
-        topicTags: q?.topicTags.map((t) => t.name),
+        problemId: String(q.frontendId),
+        difficulty: q.difficulty || "Unknown",
+        slug: q?.titleSlug || "",
+        lastSubmittedAt: q.lastSubmittedAt
+          ? new Date(q.lastSubmittedAt)
+          : new Date(),
+        topicTags: Array.isArray(q.topicTags)
+          ? q.topicTags.map((t) => t.name)
+          : [],
         ratingAtSolve: rating,
         numSubmitted: q?.numSubmitted,
+        lastResult: q?.lastResult,
       };
     });
 
@@ -169,6 +174,7 @@ export const setUserData = async (req, res, next) => {
           ? q.topicTags.map((t) => t.name)
           : [],
         numSubmitted: q?.numSubmitted,
+        lastResult: q?.lastResult,
       };
     });
 

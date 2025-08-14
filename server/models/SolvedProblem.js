@@ -28,6 +28,10 @@ const SolvedProblemSchema = new Schema(
       type: Number,
       default: 1,
     },
+    lastResult: {
+      type: String,
+      required: true,
+    },
   },
   { _id: false }
 );
