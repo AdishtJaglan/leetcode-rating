@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { useState, useEffect } from "react";
-import { ChartAreaInteractive } from "@/components/HeroChart";
+import HeroChart from "@/components/HeroChart";
 import QuestionList from "@/components/QuestionList";
 import Navbar from "@/components/Navbar";
 import axios from "axios";
@@ -42,7 +42,7 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-black p-4">
       <Navbar />
-      <ChartAreaInteractive data={chartData} />
+      <HeroChart data={chartData} />
       <QuestionList data={questionData} />
     </div>
   );
