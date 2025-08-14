@@ -40,6 +40,17 @@ const UserSchema = new Schema(
     passwordSetAt: {
       type: Date,
     },
+    contestMetaData: {
+      attendedContestsCount: { type: Number, default: null },
+      rating: { type: Number, default: null },
+      globalRanking: { type: Number, default: null },
+      topPercentage: { type: Number, default: null },
+      badges: [
+        {
+          name: { type: String },
+        },
+      ],
+    },
     authMethods: {
       type: [String],
       default: ["leetcode"],

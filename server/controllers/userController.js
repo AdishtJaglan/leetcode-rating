@@ -35,7 +35,46 @@ export const setUserData = async (req, res, next) => {
     const username = userStatus.username;
     const avatar = userStatus.avatar;
 
-    // 2) fetch submission counts
+    // 2) fetch contest meta data
+    const { userContestRanking } = await gql({
+      query: `
+        query userContestRankingInfo($username: String!) {
+          userContestRanking(username: $username) {
+            attendedContestsCount
+            rating
+            globalRanking
+            topPercentage
+            badge { name }
+          }
+        }`,
+      variables: { username },
+    });
+
+    const cr = userContestRanking || {};
+
+    let badges = [];
+    if (cr.badge) {
+      if (Array.isArray(cr.badge)) {
+        badges = cr.badge
+          .map((b) => (typeof b === "string" ? b : b?.name || null))
+          .filter(Boolean);
+      } else {
+        badges = [
+          typeof cr.badge === "string" ? cr.badge : cr.badge?.name,
+        ].filter(Boolean);
+      }
+    }
+
+    const contestRanking = {
+      attendedContestsCount: cr.attendedContestsCount ?? null,
+      rating: cr.rating ?? null,
+      globalRanking: cr.globalRanking ?? null,
+      totalParticipants: cr.totalParticipants ?? null,
+      topPercentage: cr.topPercentage ?? null,
+      badges: badges.map((name) => ({ name })),
+    };
+
+    // 3) fetch submission counts
     const { matchedUser } = await gql({
       query: `
         query($username: String!) {
@@ -51,7 +90,7 @@ export const setUserData = async (req, res, next) => {
     const submissions = matchedUser.submitStats.acSubmissionNum;
     const totalSolved = submissions.find((x) => x.difficulty === "All").count;
 
-    // 3) fetch the list of solved questions
+    // 4) fetch the list of solved questions
     const { userProgressQuestionList } = await gql(
       {
         query: `
@@ -109,6 +148,7 @@ export const setUserData = async (req, res, next) => {
       leetcodeSubmissions: submissions,
       averageRating: parseFloat(averageRating.toFixed(2)),
       solvedProblems,
+      contestMetaData: contestRanking,
     };
 
     const user = await User.findOneAndUpdate(
@@ -116,7 +156,6 @@ export const setUserData = async (req, res, next) => {
       userData,
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
-
     return res.json({ message: "Data synced successfully", user });
   } catch (err) {
     next(err);
@@ -430,13 +469,14 @@ export const getDailySolveRating = async (req, res, next) => {
   }
 };
 
+// get user image, name & contest meta data [if it exists]
+// GET /user/data
 export const getBasicUserData = async (req, res, next) => {
   try {
     const { sub: id } = req?.user;
     const user = await User.findById(id)
-      .select("-_id leetcodeUserName leetcodeAvatar")
+      .select("-_id leetcodeUserName leetcodeAvatar contestMetaData")
       .lean();
-    console.log(user);
     return res.status(200).json({ message: "Fetched.", user });
   } catch (error) {
     return res.stats(500).json({ message: "Error fetching user data.", error });

@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import getRatingColor from "@/utils/ratingColor";
 
 const QuestionList = ({
   data = [
@@ -48,22 +49,6 @@ const QuestionList = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
-  const getRatingColor = (rating) => {
-    if (rating >= 3000) return { color: "text-red-500", dot: "bg-red-500" }; // Legendary Grandmaster
-    if (rating >= 2600) return { color: "text-red-600", dot: "bg-red-600" }; // International Grandmaster
-    if (rating >= 2400) return { color: "text-red-700", dot: "bg-red-700" }; // Grandmaster
-    if (rating >= 2300)
-      return { color: "text-orange-500", dot: "bg-orange-500" }; // International Master
-    if (rating >= 2100)
-      return { color: "text-orange-400", dot: "bg-orange-400" }; // Master
-    if (rating >= 1900)
-      return { color: "text-violet-500", dot: "bg-violet-500" }; // Candidate Master
-    if (rating >= 1600) return { color: "text-blue-500", dot: "bg-blue-500" }; // Expert
-    if (rating >= 1400) return { color: "text-cyan-400", dot: "bg-cyan-400" }; // Specialist
-    if (rating >= 1200) return { color: "text-green-500", dot: "bg-green-500" }; // Pupil
-    return { color: "text-gray-400", dot: "bg-gray-400" }; // Newbie
-  };
-
   const getDifficultyColor = (difficulty) => {
     switch (difficulty.toUpperCase()) {
       case "EASY":
@@ -100,18 +85,12 @@ const QuestionList = ({
   };
 
   return (
-    <div className="min-h-screen bg-black p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-white mb-2">Problems</h1>
-          <p className="text-slate-400 text-sm">Your solved problems</p>
-        </div>
-
+    <div className="bg-black py-4">
+      <div className="mx-auto">
         {/* Table Container */}
-        <div className="backdrop-blur-sm bg-slate-950/50 border border-slate-800 rounded-lg overflow-hidden">
+        <div className="border border-slate-800 rounded-lg overflow-hidden">
           {/* Table Header */}
-          <div className="border-b border-slate-800 bg-slate-900/50">
+          <div className="border-b border-slate-800">
             <div className="grid grid-cols-12 gap-6 px-6 py-4 text-xs font-medium text-slate-400 uppercase tracking-wide">
               <div className="col-span-2">Last Solved</div>
               <div className="col-span-2">Rating</div>
