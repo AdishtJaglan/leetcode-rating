@@ -86,9 +86,6 @@ const HeroChart = ({ data }) => {
     setAverageRatingColor(getRatingColor(averagePeriodRating));
   }, [currentRating, averagePeriodRating]);
 
-  console.log(currentRatingColor);
-  console.log(averageRatingColor);
-
   return (
     <div className="w-full bg-gradient-to-br from-gray-950/30 to-gray-900/10 border border-gray-800/30 rounded-2xl backdrop-blur-sm shadow-xl">
       {/* Header Section */}
