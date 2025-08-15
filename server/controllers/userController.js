@@ -588,7 +588,9 @@ export const getWeakTopics = async (req, res, next) => {
 // we use this endpoint to generate problem recommendations
 // the recommendations are based on the rating of the user, their weak topics
 // we can also add a flag "push" which increases the difficulty of the recommended problems
-// TODO add statefulness to the recommendations, so as to not repeat the recommendations
+// TODO add filter options, such as, prefer only hards
+// TODO add toggle for premium problems
+// TODO add support to let user pick their own preferred topic/s
 // POST /user/problem-recs?push=true&limit=[1-25]
 export const getNewProblemRecs = async (req, res, next) => {
   try {
