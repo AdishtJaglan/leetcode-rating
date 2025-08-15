@@ -52,7 +52,7 @@ const Navbar = () => {
   const isActiveTab = (path) => location.pathname === path;
 
   return (
-    <div className="w-full border border-gray-800 py-4 px-4 sm:px-6 rounded-lg mb-4 hover:border-gray-700 transition-colors duration-200">
+    <div className="sticky top-2 z-50 w-full border border-gray-800 py-4 px-4 sm:px-6 rounded-lg mb-4 hover:border-gray-700 transition-colors duration-200 bg-black/75 backdrop-blur-md">
       {avatar && username ? (
         <>
           {/* Desktop Layout */}
