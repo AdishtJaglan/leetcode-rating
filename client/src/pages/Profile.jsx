@@ -40,11 +40,10 @@ const Profile = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black p-4">
-      <Navbar />
+    <>
       <HeroChart data={chartData} />
       <QuestionList data={questionData} />
-    </div>
+    </>
   );
 };
 

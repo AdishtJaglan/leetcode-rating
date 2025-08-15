@@ -87,7 +87,7 @@ const HeroChart = ({ data }) => {
   }, [currentRating, averagePeriodRating]);
 
   return (
-    <div className="w-full bg-gradient-to-br from-gray-950/30 to-gray-900/10 border border-gray-800/30 rounded-2xl backdrop-blur-sm shadow-xl">
+    <div className="w-full bg-gradient-to-br from-gray-950/30 to-gray-900/10 backdrop-blur-sm shadow-xl">
       {/* Header Section */}
       <div className="flex items-center justify-between p-6 border-b border-gray-800/30">
         <div className="flex-1">
