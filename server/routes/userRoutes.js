@@ -5,8 +5,9 @@ import {
   getDailySolveRating,
   getDailySolves,
   getDifficultyDist,
-  getProblemRecs,
+  getNewProblemRecs,
   getRatingDist,
+  getRecommendedProblems,
   getWeakTopics,
   setUserData,
 } from "../controllers/userController.js";
@@ -21,6 +22,7 @@ router.get("/rating-dist", verifyJwt(), getRatingDist);
 router.get("/rating-daily", verifyJwt(), getDailySolveRating);
 router.get("/data", verifyJwt(), getBasicUserData);
 router.get("/topics", verifyJwt(), getWeakTopics);
-router.post("/problem-recs", verifyJwt(), getProblemRecs);
+router.post("/problem-recs", verifyJwt(), getNewProblemRecs);
+router.get("/problem-recs", verifyJwt(), getRecommendedProblems);
 
 export default router;

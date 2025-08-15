@@ -590,7 +590,7 @@ export const getWeakTopics = async (req, res, next) => {
 // we can also add a flag "push" which increases the difficulty of the recommended problems
 // TODO add statefulness to the recommendations, so as to not repeat the recommendations
 // POST /user/problem-recs?push=true&limit=[1-25]
-export const getProblemRecs = async (req, res, next) => {
+export const getNewProblemRecs = async (req, res, next) => {
   try {
     const { sub: id } = req?.user;
     if (!id) return res.status(400).json({ error: "Missing user id" });
@@ -601,7 +601,7 @@ export const getProblemRecs = async (req, res, next) => {
 
     const user = await User.findById(id)
       .select(
-        "solvedProblems failedProblems weakTopicsCache contestMetaData.rating"
+        "solvedProblems failedProblems weakTopicsCache recentRecommendationHistory contestMetaData.rating"
       )
       .lean();
 
@@ -670,8 +670,14 @@ export const getProblemRecs = async (req, res, next) => {
       })
       .filter(Boolean);
 
+    const recentRecommendedQs = user?.recentRecommendationHistory || [];
+    const recentIds = recentRecommendedQs.flat().map(String).filter(Boolean);
+
+    const excludeSet = new Set([...solvedQIds, ...recentIds]);
+    const excludeIds = Array.from(excludeSet);
+
     const candidates = await Problem.find({
-      _id: { $nin: solvedQIds },
+      _id: { $nin: excludeIds },
       rating: { $gte: window.min, $lte: window.max },
       "topicTags.name": { $in: tagList },
     })
@@ -755,6 +761,8 @@ export const getProblemRecs = async (req, res, next) => {
       .sort((a, b) => b.weight - a.weight)
       .slice(0, limit);
 
+    const questionIdsList = finalSorted.map((s) => String(s.problem._id));
+
     const recommendedQuestions = finalSorted.map((s) => {
       const p = s.problem;
       return {
@@ -771,6 +779,22 @@ export const getProblemRecs = async (req, res, next) => {
       };
     });
 
+    await User.findByIdAndUpdate(
+      id,
+      {
+        $push: {
+          recentRecommendationHistory: {
+            $each: [questionIdsList],
+            $slice: -3,
+          },
+        },
+        $set: {
+          currentRecommendation: recommendedQuestions,
+        },
+      },
+      { new: true }
+    );
+
     return res.status(200).json({
       recommendedQuestions,
       metadata: {
@@ -784,5 +808,43 @@ export const getProblemRecs = async (req, res, next) => {
   } catch (error) {
     console.error("Error in getProblemRecs:", error?.message ?? error);
     return res.status(500).json({ error: error?.message ?? String(error) });
+  }
+};
+
+// get problems recommended
+// GET /user/problem-recs
+export const getRecommendedProblems = async (req, res) => {
+  try {
+    const { sub: id } = req?.user;
+    const user = await User.findById(id).select("currentRecommendation").lean();
+
+    if (!user || !Array.isArray(user.currentRecommendation)) {
+      return res.status(404).json({
+        success: false,
+        code: "NO_RECS_INITIATED",
+        message: "You have not requested recommendations yet.",
+      });
+    }
+
+    if (user.currentRecommendation.length === 0) {
+      return res.status(200).json({
+        success: false,
+        code: "NO_RECS_AVAILABLE",
+        message: "No problems to recommend.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: user.currentRecommendation.length,
+      questionRecs: user.currentRecommendation,
+    });
+  } catch (error) {
+    console.error(error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching recommendations.",
+      error: error.message,
+    });
   }
 };

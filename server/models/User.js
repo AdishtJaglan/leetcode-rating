@@ -1,6 +1,8 @@
 import { Schema, model } from "mongoose";
+
 import SolvedProblemSchema from "./SolvedProblem.js";
 import FailedProblemSchema from "./FailedProblem.js";
+import RecommendationSchema from "./Recommendation.js";
 
 const UserSchema = new Schema(
   {
@@ -42,10 +44,23 @@ const UserSchema = new Schema(
       type: Date,
     },
     contestMetaData: {
-      attendedContestsCount: { type: Number, default: null },
-      rating: { type: Number, default: null },
-      globalRanking: { type: Number, default: null },
-      topPercentage: { type: Number, default: null },
+      attendedContestsCount: {
+        type: Number,
+
+        default: null,
+      },
+      rating: {
+        type: Number,
+        default: null,
+      },
+      globalRanking: {
+        type: Number,
+        default: null,
+      },
+      topPercentage: {
+        type: Number,
+        default: null,
+      },
       badges: [
         {
           name: { type: String },
@@ -68,12 +83,26 @@ const UserSchema = new Schema(
       type: Number,
       default: 0,
     },
-    averageRating: { type: Number, default: 0 },
-    weakTopicsCache: {
-      result: { type: Object },
-      lastCalculated: { type: Date },
-      submissionCount: { type: Number },
+    averageRating: {
+      type: Number,
+      default: 0,
     },
+    weakTopicsCache: {
+      result: {
+        type: Object,
+      },
+      lastCalculated: {
+        type: Date,
+      },
+      submissionCount: {
+        type: Number,
+      },
+    },
+    recentRecommendationHistory: {
+      type: [[String]],
+      default: [],
+    },
+    currentRecommendation: [RecommendationSchema],
   },
   { timestamps: true }
 );
