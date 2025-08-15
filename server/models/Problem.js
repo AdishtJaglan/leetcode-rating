@@ -7,6 +7,11 @@ const ProblemSchema = new Schema(
       type: String,
       required: true,
     },
+    //! this matches leetcodes internal ID
+    questionId: {
+      type: Number,
+      required: true,
+    },
     title: {
       type: String,
       required: true,
