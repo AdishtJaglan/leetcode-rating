@@ -585,16 +585,18 @@ export const getWeakTopics = async (req, res, next) => {
   }
 };
 
-/**
- * GET /problem-recs?push=true&limit=12
- */
+// we use this endpoint to generate problem recommendations
+// the recommendations are based on the rating of the user, their weak topics
+// we can also add a flag "push" which increases the difficulty of the recommended problems
+// TODO add statefulness to the recommendations, so as to not repeat the recommendations
+// POST /user/problem-recs?push=true&limit=[1-25]
 export const getProblemRecs = async (req, res, next) => {
   try {
     const { sub: id } = req?.user;
     if (!id) return res.status(400).json({ error: "Missing user id" });
 
     const push = req.query?.push === "true" || req.query?.push === true;
-    const limit = Math.max(1, Math.min(25, Number(req.query?.limit || 12))); // clamp 1..50
+    const limit = Math.max(1, Math.min(25, Number(req.query?.limit || 12))); // clamp 1..25
     const candidateFetchLimit = 500; // fetch up to this many candidates to score and sort
 
     const user = await User.findById(id)
