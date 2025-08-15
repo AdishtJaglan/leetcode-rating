@@ -1,6 +1,6 @@
 /node_modules
 /.env
 /problems.json
-/foo.js
+/scripts/foo.js
 /leetcode_contests.json
-/bar.js
+/scripts/bar.js

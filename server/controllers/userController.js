@@ -3,6 +3,9 @@ import axios from "axios";
 import User from "../models/User.js";
 import Problem from "../models/Problem.js";
 
+import calculateWeakTopics from "../utils/calculateWeakTopics.js";
+import isWeakTopicsCacheValid from "../utils/weakTopicsCache.js";
+
 // setting user data [intial]
 // POST /user/data
 export const setUserData = async (req, res, next) => {
@@ -520,5 +523,64 @@ export const getBasicUserData = async (req, res, next) => {
     return res.status(200).json({ message: "Fetched.", user });
   } catch (error) {
     return res.stats(500).json({ message: "Error fetching user data.", error });
+  }
+};
+
+// this endpoints return the topics in which the user is weak,
+// and needs some practice. Calculated based on their submission history
+// We have assigned weights to each topic based on their rating, count while
+// filtering out outliers. This weight along with time decay give a value
+// that value tells us which topics to focus on.
+// GET /user/topics
+export const getWeakTopics = async (req, res, next) => {
+  try {
+    const { sub: id } = req?.user;
+
+    const user = await User.findById(id)
+      .select("solvedProblems failedProblems weakTopicsCache")
+      .lean();
+
+    const currentSubmissionCount =
+      (user?.solvedProblems?.length || 0) + (user?.failedProblems?.length || 0);
+    const cacheValidityHours = 6; // Recalculate after 6 hours regardless
+
+    // Check if we can use cached result, using helper
+    const { valid, hoursSinceLastCalculation } = isWeakTopicsCacheValid(
+      user?.weakTopicsCache,
+      currentSubmissionCount,
+      cacheValidityHours
+    );
+
+    if (valid) {
+      return res.status(200).json({
+        ...user.weakTopicsCache.result,
+        cached: true,
+        cacheAge: Math.round(hoursSinceLastCalculation * 100) / 100,
+      });
+    }
+
+    const result = await calculateWeakTopics(
+      user?.solvedProblems ?? [],
+      user?.failedProblems ?? []
+    );
+
+    await User.findByIdAndUpdate(id, {
+      weakTopicsCache: {
+        result,
+        lastCalculated: new Date(),
+        submissionCount: currentSubmissionCount,
+      },
+    });
+
+    return res.status(200).json({
+      ...result,
+      cached: false,
+    });
+  } catch (error) {
+    console.error("Error in getWeakTopics:", error);
+    return res.status(500).json({
+      message: "Error occurred.",
+      error: error.message,
+    });
   }
 };

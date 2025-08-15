@@ -69,6 +69,11 @@ const UserSchema = new Schema(
       default: 0,
     },
     averageRating: { type: Number, default: 0 },
+    weakTopicsCache: {
+      result: { type: Object },
+      lastCalculated: { type: Date },
+      submissionCount: { type: Number },
+    },
   },
   { timestamps: true }
 );
