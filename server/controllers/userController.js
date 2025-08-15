@@ -584,3 +584,203 @@ export const getWeakTopics = async (req, res, next) => {
     });
   }
 };
+
+/**
+ * GET /problem-recs?push=true&limit=12
+ */
+export const getProblemRecs = async (req, res, next) => {
+  try {
+    const { sub: id } = req?.user;
+    if (!id) return res.status(400).json({ error: "Missing user id" });
+
+    const push = req.query?.push === "true" || req.query?.push === true;
+    const limit = Math.max(1, Math.min(25, Number(req.query?.limit || 12))); // clamp 1..50
+    const candidateFetchLimit = 500; // fetch up to this many candidates to score and sort
+
+    const user = await User.findById(id)
+      .select(
+        "solvedProblems failedProblems weakTopicsCache contestMetaData.rating"
+      )
+      .lean();
+
+    const rating =
+      (user?.contestMetaData?.rating && Number(user.contestMetaData.rating)) ||
+      1500;
+
+    const currentSubmissionCount =
+      (user?.solvedProblems?.length || 0) + (user?.failedProblems?.length || 0);
+    const cacheValidityHours = 6;
+
+    // get weak topics (use cache if valid, otherwise compute + persist)
+    let weakTopicsResult;
+    const cacheCheck = isWeakTopicsCacheValid(
+      user?.weakTopicsCache,
+      currentSubmissionCount,
+      cacheValidityHours
+    );
+
+    if (cacheCheck.valid) {
+      weakTopicsResult = user.weakTopicsCache.result;
+    } else {
+      // compute fresh & persist
+      weakTopicsResult = await calculateWeakTopics(
+        user?.solvedProblems ?? [],
+        user?.failedProblems ?? []
+      );
+      await User.findByIdAndUpdate(id, {
+        weakTopicsCache: {
+          result: weakTopicsResult,
+          lastCalculated: new Date(),
+          submissionCount: currentSubmissionCount,
+        },
+      });
+    }
+
+    const topicsObj = weakTopicsResult?.topics ?? weakTopicsResult ?? {};
+    const tagWeights = Object.create(null);
+    for (const [t, v] of Object.entries(topicsObj)) {
+      const num = Number(v);
+      if (Number.isFinite(num)) tagWeights[t.toLowerCase()] = num;
+    }
+    const tagList = Object.keys(tagWeights);
+    if (tagList.length === 0) {
+      return res.status(200).json({
+        recommendedQuestions: [],
+        message: "No weak-topic signal available",
+      });
+    }
+
+    // rating window logic
+    const window = push
+      ? { min: rating + 100, max: rating + 200 }
+      : { min: rating + 50, max: rating + 100 };
+    // exclude solved problems
+    const solvedQIds = (user?.solvedProblems ?? [])
+      .map((q) => {
+        try {
+          // keep as string for $nin
+          return q?.problemId instanceof mongoose.Types.ObjectId
+            ? String(q.problemId)
+            : q?.problemId;
+        } catch {
+          return q?.problemId;
+        }
+      })
+      .filter(Boolean);
+
+    const candidates = await Problem.find({
+      _id: { $nin: solvedQIds },
+      rating: { $gte: window.min, $lte: window.max },
+      "topicTags.name": { $in: tagList },
+    })
+      .collation({ locale: "en", strength: 2 }) // !DO NOT TOUCH, this line help us deal with case invariance
+      .select("title rating topicTags titleSlug difficulty")
+      .limit(candidateFetchLimit)
+      .lean();
+
+    if (!Array.isArray(candidates) || candidates.length === 0) {
+      return res.status(200).json({ recommendedQuestions: [] });
+    }
+
+    const normalizeTags = (tarr) => {
+      if (!Array.isArray(tarr)) return [];
+      return tarr
+        .map((t) => {
+          if (typeof t === "string") return t.toLowerCase();
+          if (t && typeof t.name === "string") return t.name.toLowerCase();
+          if (t && typeof t.tag === "string") return t.tag.toLowerCase();
+
+          try {
+            return JSON.stringify(t).toLowerCase();
+          } catch {
+            return String(t).toLowerCase();
+          }
+        })
+        .filter(Boolean);
+    };
+
+    //  - matchedScore = sum of tagWeights for tags that this problem has
+    //  - matchFraction = matchedTagCount / totalTagCount (0..1)
+    //  - brevityBonus = 1 + (1 / totalTagCount)  -> problems with fewer tags get slightly more weight
+    //  - exactMatchBonus = 1.15 if matchedTagCount === totalTagCount (all tags match user's weak topics)
+    //  - final weight = matchedScore * matchFraction * brevityBonus * exactMatchBonus
+    // This favors: (a) problems whose matched tags have high weak-topic weights,
+    // (b) problems that cover a high fraction of their tags with weak topics,
+    // and (c) problems with fewer tags (brevity), and gives a small boost if all tags match.
+
+    const scored = candidates.map((p) => {
+      const pTags = normalizeTags(p.topicTags);
+      const totalTagCount = pTags.length || 1;
+      let matchedTags = [];
+      let matchedWeightSum = 0;
+      for (const t of pTags) {
+        if (Object.prototype.hasOwnProperty.call(tagWeights, t)) {
+          matchedTags.push(t);
+          matchedWeightSum += tagWeights[t];
+        }
+      }
+      const matchedCount = matchedTags.length;
+      const matchFraction = matchedCount / totalTagCount;
+
+      if (matchedCount === 0)
+        return {
+          problem: p,
+          weight: 0,
+          matchedTags: [],
+          matchFraction: 0,
+          totalTagCount,
+        };
+
+      const brevityBonus = 1 + 1 / totalTagCount;
+      const exactMatchBonus = matchedCount === totalTagCount ? 1.15 : 1.0;
+
+      const base = matchedWeightSum; // base importance coming from topic weights
+      const weight = base * matchFraction * brevityBonus * exactMatchBonus;
+
+      return {
+        problem: p,
+        weight,
+        matchedTags,
+        matchFraction,
+        totalTagCount,
+        matchedWeightSum: +matchedWeightSum.toFixed(4),
+      };
+    });
+
+    // Filter out zero-weight and sort desc
+    const finalSorted = scored
+      .filter((s) => s.weight > 0)
+      .sort((a, b) => b.weight - a.weight)
+      .slice(0, limit);
+
+    const recommendedQuestions = finalSorted.map((s) => {
+      const p = s.problem;
+      return {
+        id: p._id,
+        title: p.title ?? null,
+        slug: p.titleSlug ?? null,
+        rating: p.rating,
+        difficulty: p.difficulty ?? null,
+        tags: normalizeTags(p.topicTags),
+        matchedTags: s.matchedTags,
+        matchedWeightSum: s.matchedWeightSum,
+        matchFraction: +s.matchFraction.toFixed(3),
+        weight: +s.weight.toFixed(4),
+      };
+    });
+
+    return res.status(200).json({
+      recommendedQuestions,
+      metadata: {
+        userRating: rating,
+        ratingWindow: window,
+        push,
+        tagsConsidered: tagList.length,
+        candidatesConsidered: candidates.length,
+      },
+    });
+  } catch (error) {
+    console.error("Error in getProblemRecs:", error?.message ?? error);
+    return res.status(500).json({ error: error?.message ?? String(error) });
+  }
+};
