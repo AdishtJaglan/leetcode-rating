@@ -848,3 +848,51 @@ export const getRecommendedProblems = async (req, res) => {
     });
   }
 };
+
+// gets your current streak, works differently than your traditional streak counter
+// if you submit the same question on two different days, only its latest submission will count
+// this is the discourage people from copy pasting code to maintain streaks
+// get /user/streak
+export const getStreak = async (req, res, next) => {
+  try {
+    const { sub: id } = req?.user;
+    const user = await User.findById(id)
+      .select("-_id solvedProblems failedProblems")
+      .lean();
+
+    const allDates = [];
+    user.solvedProblems.forEach((p) => {
+      if (p.lastSubmittedAt) allDates.push(new Date(p.lastSubmittedAt));
+    });
+    user.failedProblems.forEach((p) => {
+      if (p.lastSubmittedAt) allDates.push(new Date(p.lastSubmittedAt));
+    });
+    if (allDates.length === 0) {
+      return res.status(200).json({ currentStreak: 0 });
+    }
+
+    // Normalize to YYYY-MM-DD and get unique days
+    const dateSet = new Set(allDates.map((d) => d.toISOString().split("T")[0]));
+
+    const today = new Date();
+    let streak = 0;
+
+    for (let i = 0; ; i++) {
+      const checkDate = new Date(today);
+      checkDate.setDate(today.getDate() - i);
+      const key = checkDate.toISOString().split("T")[0];
+
+      if (dateSet.has(key)) {
+        streak++;
+      } else {
+        if (i === 0) streak = 0;
+        break;
+      }
+    }
+
+    res.status(200).json({ currentStreak: streak });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};

@@ -8,6 +8,7 @@ import {
   getNewProblemRecs,
   getRatingDist,
   getRecommendedProblems,
+  getStreak,
   getWeakTopics,
   setUserData,
 } from "../controllers/userController.js";
@@ -24,5 +25,6 @@ router.get("/data", verifyJwt(), getBasicUserData);
 router.get("/topics", verifyJwt(), getWeakTopics);
 router.post("/problem-recs", verifyJwt(), getNewProblemRecs);
 router.get("/problem-recs", verifyJwt(), getRecommendedProblems);
+router.get("/streak", verifyJwt(), getStreak);
 
 export default router;
