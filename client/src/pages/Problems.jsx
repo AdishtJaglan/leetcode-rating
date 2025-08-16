@@ -110,42 +110,78 @@ const Problems = () => {
     <div className="space-y-6 p-4 px-6">
       {/* Weak Topics Section */}
       <div>
-        <div className="mb-4">
-          <h2 className="text-xl font-medium text-white mb-1">
-            Areas to Focus
-          </h2>
-          <p className="text-gray-500 text-sm">
-            Topics where you need more practice based on submission history
-          </p>
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg flex items-center justify-center">
+              <svg
+                className="w-4 h-4 text-white"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-white">
+                Areas to Focus
+              </h2>
+              <p className="text-gray-400 text-sm">
+                Topics where you need more practice based on submission history
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-1">
-          {sortedWeakTopics.map(([topic], index) => (
-            <div
-              key={topic}
-              className="flex items-center justify-between py-2 hover:bg-gray-900/20 rounded transition-colors duration-150"
-            >
-              <div className="flex items-center gap-2">
-                <div
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    index === 0
-                      ? "bg-red-500"
-                      : index === 1
-                      ? "bg-orange-500"
-                      : index === 2
-                      ? "bg-yellow-500"
-                      : "bg-gray-600"
-                  }`}
-                ></div>
-                <span className="text-gray-300 capitalize text-sm">
-                  {topic}
-                </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {sortedWeakTopics.map(([topic], index) => (
+              <div
+                key={topic}
+                className="group relative border border-gray-700/50 rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div
+                        className={`w-3 h-3 rounded-full ${
+                          index === 0
+                            ? "bg-red-500 shadow-lg shadow-red-500/50"
+                            : index === 1
+                            ? "bg-orange-500 shadow-lg shadow-orange-500/50"
+                            : index === 2
+                            ? "bg-yellow-500 shadow-lg shadow-yellow-500/50"
+                            : "bg-gray-500"
+                        }`}
+                      />
+                      {index < 3 && (
+                        <div
+                          className={`absolute -inset-1 rounded-full opacity-20 animate-pulse ${
+                            index === 0
+                              ? "bg-red-500"
+                              : index === 1
+                              ? "bg-orange-500"
+                              : "bg-yellow-500"
+                          }`}
+                        />
+                      )}
+                    </div>
+                    <span className="text-gray-200 capitalize font-medium">
+                      {topic}
+                    </span>
+                  </div>
+                  {index < 3 && (
+                    <span className="text-xs font-medium px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full border border-blue-500/30">
+                      Priority
+                    </span>
+                  )}
+                </div>
               </div>
-              {index < 3 && (
-                <span className="text-xs text-gray-600">Priority</span>
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
 
@@ -153,79 +189,109 @@ const Problems = () => {
       {recProblems.length > 0 ? (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-xl font-medium text-white mb-1">
-                Recommended Problems
-              </h2>
-              <p className="text-gray-500 text-sm">
-                {recProblems.length} problems tailored to your weak areas
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                <svg
+                  className="w-4 h-4 text-white"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 01-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 010-2h4a1 1 0 011 1v4a1 1 0 01-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 012 0v1.586l2.293-2.293a1 1 0 111.414 1.414L6.414 15H8a1 1 0 010 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 010-2h1.586l-2.293-2.293a1 1 0 111.414-1.414L15 13.586V12a1 1 0 011-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-white">
+                  Recommended Problems
+                </h2>
+                <p className="text-gray-400 text-sm">
+                  {recProblems.length} problems tailored to your weak areas
+                </p>
+              </div>
             </div>
 
             {/* Controls */}
-            <div className="flex items-center gap-3">
-              {/* Show Tags Toggle */}
+            <div className="flex items-center gap-2 backdrop-blur-sm border border-gray-700/50 rounded-xl p-2">
               <button
                 onClick={() => setShowTags(!showTags)}
-                className="text-xs text-gray-400 hover:text-gray-200 transition-colors duration-150 cursor-pointer"
+                className={`cursor-pointer px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                  showTags
+                    ? "bg-blue-500 text-white shadow-lg shadow-blue-500/20"
+                    : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
+                }`}
               >
                 {showTags ? "Hide Tags" : "Show Tags"}
               </button>
-
-              {/* Filters Toggle */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="text-xs text-gray-400 hover:text-gray-200 transition-colors duration-150 cursor-pointer"
+                className={`cursor-pointer px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                  showFilters
+                    ? "bg-purple-500 text-white shadow-lg shadow-purple-500/20"
+                    : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
+                }`}
               >
                 {showFilters ? "Hide Filters" : "Show Filters"}
               </button>
-
-              {/* Hard Mode Toggle with Tooltip */}
-              <div className="flex items-center gap-2 relative group cursor-pointer">
-                <label className="text-sm text-gray-400">Push Difficulty</label>
+              <div className="flex items-center gap-2 px-3 py-2 relative group">
+                <span className="text-xs text-gray-400 font-medium">Push</span>
                 <button
                   onClick={() => setHardMode(!hardMode)}
-                  className={`w-10 h-6 rounded-full relative transition-colors duration-200 ${
-                    hardMode ? "bg-blue-600" : "bg-gray-800 hover:bg-gray-700"
+                  className={`cursor-pointer w-11 h-6 rounded-full relative transition-all duration-300 ${
+                    hardMode
+                      ? "bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg shadow-blue-500/30"
+                      : "bg-gray-700 hover:bg-gray-600"
                   }`}
                 >
                   <div
-                    className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform duration-200 ${
-                      hardMode ? "translate-x-5" : "translate-x-1"
+                    className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all duration-300 shadow-lg ${
+                      hardMode
+                        ? "translate-x-5 shadow-blue-500/20"
+                        : "translate-x-0.5"
                     }`}
-                  ></div>
+                  />
                 </button>
 
-                {/* Tooltip */}
-                <div className="absolute bottom-full right-0 mb-2 w-64 p-2 bg-gray-900 text-xs text-gray-300 rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-                  <div className="font-medium text-gray-200 mb-1">
-                    Push Difficulty:
+                <div className="absolute bottom-full right-0 mb-3 w-72 p-3 bg-black backdrop-blur-sm border border-gray-700 text-xs text-gray-300 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-20">
+                  <div className="font-semibold text-white mb-2">
+                    🚀 Push Difficulty Mode
                   </div>
-                  Pushes the difficulty range to +100 to +200 from your current
-                  rating. For custom difficulty ranges, toggle this off and use
-                  filters below.
-                  <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                  <p className="leading-relaxed">
+                    Automatically increases difficulty range by{" "}
+                    <span className="text-rose-400 font-mono">+100</span> to{" "}
+                    <span className="text-rose-400 font-mono">+200</span> from
+                    your current rating. Toggle off for custom difficulty ranges
+                    using filters below.
+                  </p>
+                  <div className="absolute top-full right-6 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900/95" />
                 </div>
               </div>
-
-              {/* Refresh Button */}
+              <div className="w-px h-6 bg-gray-700" /> {/* Separator */}
               <button
                 onClick={handleRefresh}
                 disabled={isLoading}
-                className="p-2 text-gray-400 hover:text-gray-200 hover:bg-gray-800/50 rounded transition-colors duration-150 disabled:opacity-50"
+                className="cursor-pointer p-2 text-gray-400 hover:text-white hover:bg-blue-500/20 rounded-lg transition-all duration-200 disabled:opacity-50 group"
               >
                 <svg
-                  className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                  className={`w-4 h-4 ${
+                    isLoading ? "animate-spin" : "group-hover:rotate-180"
+                  } transition-transform duration-300`}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
+                  <svg
+                    className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
                 </svg>
               </button>
             </div>
@@ -234,6 +300,25 @@ const Problems = () => {
           {/* Filters Panel */}
           {showFilters && (
             <div className="mb-6 p-4 rounded-lg border border-gray-800">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                  <svg
+                    className="w-3 h-3 text-white"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-white">
+                  Advanced Filters
+                </h3>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Rating Range */}
                 <div className="space-y-2">
