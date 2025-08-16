@@ -588,14 +588,92 @@ export const getWeakTopics = async (req, res, next) => {
 // we use this endpoint to generate problem recommendations
 // the recommendations are based on the rating of the user, their weak topics
 // we can also add a flag "push" which increases the difficulty of the recommended problems
-// TODO add filter options, such as, prefer only hards
-// TODO add toggle for premium problems
-// TODO add support to let user pick their own preferred topic/s
+// TODO add support to let user pick their own preferred topic/s [could be better to create separate endpoint for this]
 // POST /user/problem-recs?push=true&limit=[1-25]
 export const getNewProblemRecs = async (req, res, next) => {
   try {
     const { sub: id } = req?.user;
-    if (!id) return res.status(400).json({ error: "Missing user id" });
+    const {
+      minRating: minRaw = undefined,
+      maxRating: maxRaw = undefined,
+      preferredDifficulty: prefRaw,
+      isPremium: isPremiumRaw = undefined,
+    } = req?.body || {};
+
+    const minRating = minRaw ?? 50;
+    const maxRating = maxRaw ?? 100;
+
+    const minNum = Number(minRating);
+    const maxNum = Number(maxRating);
+
+    if (!id) {
+      return res.status(400).json({ error: "Missing user id" });
+    }
+
+    if (!Number.isFinite(minNum) || !Number.isFinite(maxNum)) {
+      return res.status(400).json({ error: "Ratings must be numeric" });
+    }
+
+    if (minNum >= maxNum) {
+      return res.status(400).json({
+        mesage: "Minimum selected rating must be strictly lower than maximum.",
+      });
+    }
+
+    const ALLOWED = new Set(["Easy", "Medium", "Hard"]);
+
+    const parseBool = (v) => {
+      if (typeof v === "boolean") return v;
+      if (typeof v === "number") return v === 1;
+      if (typeof v === "string") {
+        const t = v.trim().toLowerCase();
+        return t === "true" || t === "1" || t === "yes" || t === "y";
+      }
+      return false;
+    };
+    const isPremium = parseBool(isPremiumRaw ?? false);
+
+    const normalize = (s) => {
+      if (typeof s !== "string") return null;
+      const t = s.trim();
+      if (!t) return null;
+      return t[0].toUpperCase() + t.slice(1).toLowerCase();
+    };
+
+    let difficultyFilterValues = null;
+    if (prefRaw != null) {
+      if (typeof prefRaw === "string") {
+        const normalized = normalize(prefRaw);
+        if (normalized) {
+          if (!ALLOWED.has(normalized)) {
+            return res.status(400).json({
+              error:
+                'preferredDifficulty must be one of "Easy", "Medium", "Hard" (or omitted).',
+            });
+          }
+          difficultyFilterValues = [normalized];
+        }
+      } else if (Array.isArray(prefRaw)) {
+        const normalizedArr = prefRaw.map(normalize).filter((v) => v !== null);
+        const uniq = [...new Set(normalizedArr)];
+        const hadInvalid = normalizedArr.some((v) => !ALLOWED.has(v));
+
+        if (uniq.length === 0) {
+          difficultyFilterValues = null;
+        } else if (hadInvalid) {
+          return res.status(400).json({
+            error:
+              'preferredDifficulty array may only contain "Easy", "Medium", "Hard" (case-insensitive).',
+          });
+        } else {
+          difficultyFilterValues = uniq;
+        }
+      } else {
+        return res.status(400).json({
+          error: "preferredDifficulty must be a string or an array of strings.",
+        });
+      }
+    }
 
     const push = req.query?.push === "true" || req.query?.push === true;
     const limit = Math.max(1, Math.min(25, Number(req.query?.limit || 12))); // clamp 1..25
@@ -657,7 +735,8 @@ export const getNewProblemRecs = async (req, res, next) => {
     // rating window logic
     const window = push
       ? { min: rating + 100, max: rating + 200 }
-      : { min: rating + 50, max: rating + 100 };
+      : { min: rating + minNum, max: rating + maxNum };
+
     // exclude solved problems
     const solvedQIds = (user?.solvedProblems ?? [])
       .map((q) => {
@@ -678,11 +757,17 @@ export const getNewProblemRecs = async (req, res, next) => {
     const excludeSet = new Set([...solvedQIds, ...recentIds]);
     const excludeIds = Array.from(excludeSet);
 
-    const candidates = await Problem.find({
+    const query = {
       _id: { $nin: excludeIds },
       rating: { $gte: window.min, $lte: window.max },
       "topicTags.name": { $in: tagList },
-    })
+    };
+    query.isPaidOnly = isPremium;
+    if (difficultyFilterValues) {
+      query.difficulty = { $in: difficultyFilterValues };
+    }
+
+    const candidates = await Problem.find(query)
       .collation({ locale: "en", strength: 2 }) // !DO NOT TOUCH, this line help us deal with case invariance
       .select("title rating topicTags titleSlug difficulty")
       .limit(candidateFetchLimit)
