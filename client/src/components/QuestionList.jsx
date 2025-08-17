@@ -51,6 +51,7 @@ const QuestionList = () => {
           params: { page, limit: 20 },
         });
 
+        console.log(data);
         const newProblems = data?.data || [];
         const meta = data?.meta || {};
 
@@ -77,7 +78,7 @@ const QuestionList = () => {
   }, []); //! Intentionally run only once on mount
 
   const cleanTitle = (title, problemId) => {
-    return title.replace(new RegExp(`^${problemId}\\.\\s*`), "");
+    return title?.replace(new RegExp(`^${problemId}\\.\\s*`), "");
   };
 
   const safeData = useMemo(() => {
