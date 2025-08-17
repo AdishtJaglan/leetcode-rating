@@ -9,7 +9,7 @@ const OUT_FILE = join(__dirname, "problems.json");
 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 
 (async () => {
-  const TARGET_COUNT = 3640;
+  const TARGET_COUNT = 4000;
   const SCROLL_DELAY_MS = 1000;
   const MAX_NO_CHANGE = 5;
 
