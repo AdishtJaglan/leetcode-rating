@@ -1,4 +1,9 @@
 import fs from "fs/promises";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const OUT_FILE = join(__dirname, "questions.json");
 
 const GRAPHQL_URL = "https://leetcode.com/graphql";
 
@@ -37,12 +42,14 @@ async function fetchAllQuestions() {
 
     const json = await response.json();
 
+    const allQuestions = json?.data?.allQuestions ?? [];
+
     await fs.writeFile(
-      "questions.json",
-      JSON.stringify(json, null, 2),
+      OUT_FILE,
+      JSON.stringify(allQuestions, null, 2),
       "utf-8"
     );
-    console.log("Saved all questions to questions.json");
+    console.log("Saved all questions to", OUT_FILE);
   } catch (err) {
     console.error("Failed to fetch questions:", err);
   }

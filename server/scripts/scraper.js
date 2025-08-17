@@ -1,5 +1,10 @@
 import puppeteer from "puppeteer";
 import fs from "fs";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const OUT_FILE = join(__dirname, "problems.json");
 
 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 
@@ -66,8 +71,8 @@ const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     })
   );
 
-  fs.writeFileSync("problems.json", JSON.stringify(problems, null, 2), "utf-8");
-  console.log(`📄 Saved ${problems.length} problems to problems.json`);
+  fs.writeFileSync(OUT_FILE, JSON.stringify(problems, null, 2), "utf-8");
+  console.log(`📄 Saved ${problems.length} problems to ${OUT_FILE}`);
 
   await browser.close();
 })();
