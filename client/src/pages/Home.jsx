@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DotPattern } from "@/components/magicui/dot-pattern";
+import Features from "@/components/Features";
 import IDEmock from "@/components/IDEmock";
+import ProfessionalStats from "@/components/Stat";
 import { cn } from "@/lib/utils";
 import {
   Code,
@@ -12,68 +14,18 @@ import {
   Zap,
   CheckCircle,
   ArrowRight,
-  BarChart3,
-  Target,
-  TrendingUp,
-  Users,
-  Star,
   Sparkles,
 } from "lucide-react";
 
 const Home = () => {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
-  const [, setActiveFeature] = useState(0);
 
   useEffect(() => {
     setIsVisible(true);
-    const interval = setInterval(() => {
-      setActiveFeature((prev) => (prev + 1) % 3);
-    }, 3000);
+    const interval = setInterval(() => {}, 3000);
     return () => clearInterval(interval);
   }, []);
-
-  const features = [
-    {
-      icon: <Target className="w-6 h-6 text-white" />,
-      title: "Real Difficulty Ratings",
-      description:
-        "Get precise difficulty ratings based on actual solving patterns, not arbitrary labels.",
-      gradient: "from-zinc-800 to-black",
-    },
-    {
-      icon: <BarChart3 className="w-6 h-6 text-white" />,
-      title: "Comprehensive Analytics",
-      description:
-        "Track your progress with detailed analytics and personalized insights.",
-      gradient: "from-zinc-800 to-black",
-    },
-    {
-      icon: <TrendingUp className="w-6 h-6 text-white" />,
-      title: "Smart Recommendations",
-      description:
-        "Get AI-powered problem recommendations tailored to your skill level and goals.",
-      gradient: "from-zinc-800 to-black",
-    },
-  ];
-
-  const stats = [
-    {
-      icon: <Users className="w-8 h-8 text-white" />,
-      value: "50K+",
-      label: "Active Users",
-    },
-    {
-      icon: <Star className="w-8 h-8 text-white" />,
-      value: "4.9★",
-      label: "Chrome Store Rating",
-    },
-    {
-      icon: <BarChart3 className="w-8 h-8 text-white" />,
-      value: "2M+",
-      label: "Problems Analyzed",
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden relative">
@@ -179,84 +131,10 @@ const Home = () => {
       </section>
 
       {/* Features Section */}
-      <section
-        id="features"
-        className="relative z-10 px-6 py-24 bg-zinc-950/80 backdrop-blur-sm border-t border-white/5"
-      >
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20">
-            <h2 className="text-5xl md:text-6xl font-black mb-6 tracking-tight">
-              Why Choose{" "}
-              <span className="bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
-                LeetRate?
-              </span>
-            </h2>
-            <p className="text-xl text-zinc-400 max-w-3xl mx-auto font-light">
-              Get the insights you need to level up your coding game with
-              precision and style.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <div
-                key={index}
-                // UPDATED: Added colored shadow on hover
-                className={`group relative bg-gradient-to-br from-zinc-900/50 to-black/50 backdrop-blur-sm rounded-3xl p-8 border transition-all duration-500 hover:transform hover:scale-105 cursor-pointer border-white/10 hover:border-white/20 ${feature.shadow}`}
-              >
-                <div
-                  className={`w-14 h-14 rounded-2xl bg-gradient-to-r ${feature.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 border border-white/20 backdrop-blur-sm shadow-lg`}
-                >
-                  {feature.icon}
-                </div>
-                <h3 className="text-xl font-bold mb-4 text-white">
-                  {feature.title}
-                </h3>
-                <p className="text-zinc-400 leading-relaxed font-light">
-                  {feature.description}
-                </p>
-                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <Features />
 
       {/* Stats Section */}
-      <section id="stats" className="relative z-10 px-6 py-24">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-gradient-to-br from-zinc-900/80 to-black/80 backdrop-blur-sm rounded-3xl p-16 border border-white/10 shadow-2xl">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight">
-                Trusted by Developers Worldwide
-              </h2>
-              <p className="text-zinc-400 text-xl font-light">
-                Join thousands who have already upgraded their coding experience
-              </p>
-            </div>
-            <div className="grid md:grid-cols-3 gap-12">
-              {stats.map((stat, index) => (
-                <div key={index} className="text-center group">
-                  {/* UPDATED: Used colored gradients for icons */}
-                  <div
-                    className={`w-20 h-20 bg-gradient-to-r ${stat.gradient} rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 border border-white/20 backdrop-blur-sm shadow-lg`}
-                  >
-                    {stat.icon}
-                  </div>
-                  {/* UPDATED: Used colors for the stat values */}
-                  <div
-                    className={`text-4xl md:text-5xl font-black ${stat.color} mb-3`}
-                  >
-                    {stat.value}
-                  </div>
-                  <div className="text-zinc-400 font-medium text-lg">
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      <ProfessionalStats />
 
       {/* How it Works */}
       <section className="relative z-10 px-6 py-24 bg-zinc-950/80 backdrop-blur-sm border-t border-white/5">
