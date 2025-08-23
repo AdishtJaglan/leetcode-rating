@@ -50,10 +50,7 @@ async function main() {
   }
 
   try {
-    await mongoose.connect(mongoUri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(mongoUri);
     console.log("Connected to MongoDB:", mongoUri);
   } catch (err) {
     console.error("Failed to connect to MongoDB:", err.message);
