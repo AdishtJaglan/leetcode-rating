@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import userRoutes from "./routes/userRoutes.js";
 import problemRoutes from "./routes/problemRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import contestRoutes from "./routes/contestRoutes.js";
 
 import logger from "./utils/logger.js";
 
@@ -47,6 +48,7 @@ app.use(express.json());
 app.use("/api/user", userRoutes);
 app.use("/api/problem", problemRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/contest", contestRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "Welcome." });
