@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "update-data": "node scripts/scraper.js && node scripts/getData.js && node scripts/seedData.js"
+    "update-data": "node scripts/scrapeRatings.js && node scripts/getAllQuestions.js && node scripts/seedProblems.js"
   },
   "keywords": [],
   "author": "",
