@@ -2,7 +2,7 @@ import { Schema } from "mongoose";
 
 const ContestQuestionSchema = new Schema(
   {
-    problem: {
+    problemId: {
       type: String,
       ref: "Problem",
       required: true,
@@ -11,13 +11,9 @@ const ContestQuestionSchema = new Schema(
       type: Number,
       required: true,
     },
-    questionPoints: {
+    questionCredits: {
       type: Number,
       default: 1,
-      required: true,
-    },
-    questionNumber: {
-      type: Number,
       required: true,
     },
   },
