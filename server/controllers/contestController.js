@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import Problem from "../models/Problem.js";
 import UserContestCache from "../models/UserContestCache.js";
+import Contest from "../models/Contest.js";
 import {
   fetchContestQuestions,
   getAttendedContests,
@@ -285,6 +286,218 @@ export const getContestSolves = async (req, res, next) => {
     return res.status(500).json({
       message: "Error fetching user contest data.",
       error: error?.message,
+    });
+  }
+};
+
+// quickly get a list of topics asked in last couple contest
+// can ask for more contest using query param limit
+export const getFrequentlyAskedTopics = async (req, res, next) => {
+  try {
+    const limit = Number(req.query.limit ?? 10);
+
+    const pipeline = [
+      { $sort: { startTime: -1, _id: -1 } },
+      { $limit: limit },
+      { $project: { questions: 1 } },
+      { $unwind: "$questions" },
+      {
+        $lookup: {
+          from: "problems",
+          localField: "questions.problemId",
+          foreignField: "_id",
+          as: "problem",
+        },
+      },
+      { $unwind: { path: "$problem", preserveNullAndEmptyArrays: false } },
+      {
+        $unwind: {
+          path: "$problem.topicTags",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      {
+        $group: {
+          _id: "$problem.topicTags.slug",
+          name: { $first: "$problem.topicTags.name" },
+          count: { $sum: 1 },
+        },
+      },
+      { $project: { slug: "$_id", name: 1, count: 1, _id: 0 } },
+      { $sort: { count: -1 } },
+    ];
+
+    const topicCounts = await Contest.aggregate(pipeline).exec();
+    return res.status(200).json({ topicCounts });
+  } catch (error) {
+    console.error("Agg error:", error?.message);
+    return res.status(500).json({ message: "error", error: error?.message });
+  }
+};
+
+// get a detailed list of which topic is asked most in each question
+// can ask for more contest using query param limit
+export const getTopicFrequencyByQuestionNumber = async (req, res, next) => {
+  try {
+    const limit = Number(req.query.limit ?? 10);
+    const ignoreParam = (req.query.ignore ?? "array")
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+
+    const pipeline = [
+      { $sort: { startTime: -1, _id: -1 } },
+      ...(limit > 0 ? [{ $limit: limit }] : []),
+      { $project: { questions: 1 } },
+      { $unwind: { path: "$questions", includeArrayIndex: "qIndex" } },
+      { $match: { qIndex: { $in: [0, 1, 2, 3] } } },
+      {
+        $lookup: {
+          from: "problems",
+          localField: "questions.problemId",
+          foreignField: "_id",
+          as: "problem",
+        },
+      },
+      { $unwind: { path: "$problem", preserveNullAndEmptyArrays: false } },
+      {
+        $unwind: {
+          path: "$problem.topicTags",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      {
+        $addFields: {
+          tagKey: {
+            $toLower: {
+              $ifNull: ["$problem.topicTags.slug", "$problem.topicTags.name"],
+            },
+          },
+          tagName: "$problem.topicTags.name",
+          tagSlug: "$problem.topicTags.slug",
+        },
+      },
+      ...(ignoreParam.length
+        ? [{ $match: { tagKey: { $nin: ignoreParam } } }]
+        : []),
+      {
+        $group: {
+          _id: { tagKey: "$tagKey", qIndex: "$qIndex" },
+          name: { $first: "$tagName" },
+          slug: { $first: "$tagSlug" },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $group: {
+          _id: "$_id.tagKey",
+          name: { $first: "$name" },
+          slug: { $first: "$slug" },
+          total: { $sum: "$count" },
+          q0: { $sum: { $cond: [{ $eq: ["$_id.qIndex", 0] }, "$count", 0] } },
+          q1: { $sum: { $cond: [{ $eq: ["$_id.qIndex", 1] }, "$count", 0] } },
+          q2: { $sum: { $cond: [{ $eq: ["$_id.qIndex", 2] }, "$count", 0] } },
+          q3: { $sum: { $cond: [{ $eq: ["$_id.qIndex", 3] }, "$count", 0] } },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          slug: { $ifNull: ["$slug", "$_id"] },
+          name: 1,
+          total: 1,
+          perQuestion: {
+            1: { $ifNull: ["$q0", 0] },
+            2: { $ifNull: ["$q1", 0] },
+            3: { $ifNull: ["$q2", 0] },
+            4: { $ifNull: ["$q3", 0] },
+          },
+        },
+      },
+      { $sort: { total: -1 } },
+    ];
+
+    const topics = await Contest.aggregate(pipeline).exec();
+    return res.status(200).json({ topics });
+  } catch (error) {
+    console.error("Error in getTopicTotalsWithPerQuestion:", error?.message);
+    return res.status(500).json({ message: "error", error: error?.message });
+  }
+};
+
+// get the average rating of each question [1,2,3,4] asked in contests
+// query param limit to tweak the number of contests asked
+export const getAverageRatingsByQuestionNumber = async (req, res, next) => {
+  try {
+    const limit = Number(req.query.limit ?? 10);
+
+    const pipeline = [
+      { $sort: { startTime: -1 } },
+      { $limit: limit },
+      { $unwind: { path: "$questions", includeArrayIndex: "questionIndex" } },
+      {
+        $lookup: {
+          from: "problems",
+          localField: "questions.problemId",
+          foreignField: "_id",
+          as: "problemData",
+          pipeline: [{ $project: { rating: 1 } }],
+        },
+      },
+      {
+        $match: {
+          "problemData.rating": { $exists: true, $ne: null, $type: "number" },
+        },
+      },
+      {
+        $group: {
+          _id: "$questionIndex",
+          count: { $sum: 1 },
+          sum: { $sum: { $arrayElemAt: ["$problemData.rating", 0] } },
+          sumOfSquares: {
+            $sum: {
+              $pow: [{ $arrayElemAt: ["$problemData.rating", 0] }, 2],
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          questionNumber: { $add: ["$_id", 1] },
+          average: { $divide: ["$sum", "$count"] },
+          stdDev: {
+            $sqrt: {
+              $subtract: [
+                { $divide: ["$sumOfSquares", "$count"] },
+                { $pow: [{ $divide: ["$sum", "$count"] }, 2] },
+              ],
+            },
+          },
+          count: 1,
+        },
+      },
+      { $sort: { questionNumber: 1 } },
+    ];
+
+    const results = await Contest.aggregate(pipeline);
+
+    const ratingsStats = results.reduce((acc, item) => {
+      acc[item.questionNumber] = {
+        average: Math.round(item.average * 100) / 100,
+        stdDev: Math.round(item.stdDev * 100) / 100,
+      };
+      return acc;
+    }, {});
+
+    return res.status(200).json({ ratingsStats });
+  } catch (error) {
+    console.error(
+      "Error calculating average ratings by question index:",
+      error.message
+    );
+    return res.status(500).json({
+      message: "Failed to calculate rating statistics",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
