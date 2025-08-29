@@ -903,7 +903,9 @@ export const getNewProblemRecs = async (req, res, next) => {
 export const getRecommendedProblems = async (req, res) => {
   try {
     const { sub: id } = req?.user;
-    const user = await User.findById(id).select("currentRecommendation").lean();
+    const user = await User.findById(id)
+      .select("currentRecommendation solvedProblems")
+      .lean();
 
     if (!user || !Array.isArray(user.currentRecommendation)) {
       return res.status(404).json({
@@ -921,10 +923,38 @@ export const getRecommendedProblems = async (req, res) => {
       });
     }
 
+    const getIdString = (x) => {
+      if (x == null) return "";
+      if (typeof x === "string" || typeof x === "number") return String(x);
+      return String(x.id ?? x.problemId ?? x.slug ?? x._id ?? "");
+    };
+
+    let solvedSet = new Set();
+    if (Array.isArray(user.solvedProblems) && user.solvedProblems.length > 0) {
+      solvedSet = new Set(user.solvedProblems.map(getIdString));
+    }
+
+    let solvedCount = 0;
+    const questionRecs = user.currentRecommendation.map((rec) => {
+      const recId = getIdString(rec?.id ?? rec?.problemId ?? rec?.slug ?? rec);
+      const isSolved = solvedSet.has(recId);
+      if (isSolved) solvedCount++;
+      return {
+        ...rec,
+        isSolved,
+      };
+    });
+
+    const totalRecommended = questionRecs.length;
+    const unsolvedCount = totalRecommended - solvedCount;
+
     return res.status(200).json({
       success: true,
-      count: user.currentRecommendation.length,
-      questionRecs: user.currentRecommendation,
+      totalRecommended,
+      solvedCount,
+      unsolvedCount,
+      count: totalRecommended,
+      questionRecs,
     });
   } catch (error) {
     console.error(error.message);
