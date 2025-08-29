@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 
 import getRatingColor from "@/utils/ratingColor";
+import ProblemStats from "@/components/problems/ProblemStats";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -12,6 +13,7 @@ const Problems = () => {
   const [showTags, setShowTags] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [problemData, setProblemData] = useState({});
 
   const [filters, setFilters] = useState({
     minRating: "",
@@ -40,6 +42,11 @@ const Problems = () => {
         setWeakTopics(weakTopicsRes?.data?.topics);
         if (problemRecsRes?.data?.success) {
           setRecProblems(problemRecsRes?.data?.questionRecs);
+          setProblemData({
+            solvedCount: problemRecsRes?.data?.solvedCount,
+            total: problemRecsRes?.data?.totalRecommended,
+            unsolvedCount: problemRecsRes?.data?.unsolvedCount,
+          });
         } else {
           // you gotta req problems
         }
@@ -212,6 +219,8 @@ const Problems = () => {
                 </p>
               </div>
             </div>
+
+            <ProblemStats problemData={problemData} />
 
             {/* Controls */}
             <div className="flex items-center gap-2 backdrop-blur-sm border border-gray-700/50 rounded-xl p-2">
@@ -462,6 +471,11 @@ const Problems = () => {
                         >
                           {problem.difficulty}
                         </span>
+                        {problem.isSolved && (
+                          <span className="text-green-400 text-xs bg-green-400/10 px-2 py-0.5 rounded border border-green-500/30">
+                            ✓ Solved
+                          </span>
+                        )}
                       </div>
 
                       {/* Tags - Cleaner Style */}
