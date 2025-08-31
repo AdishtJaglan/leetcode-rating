@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Send Cookies</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+          />
+        </svg>
+      </div>
+
+      <h1>LeetCode Sync</h1>
+      <p class="subtitle">Sync your authentication cookies</p>
+
+      <button id="send">
+        <span class="button-text">Send LeetCode Cookies</span>
+      </button>
+
+      <button id="show" aria-pressed="false" title="Show masked tokens">
+        <span class="button-text">Show Tokens</span>
+      </button>
+
+      <div id="cookieContainer" class="cookie-container" style="display: none">
+        <div class="cookie-row">
+          <div class="cookie-label">LEETCODE_SESSION</div>
+          <div class="cookie-value">
+            <span class="token" id="token-session">—</span>
+          </div>
+        </div>
+
+        <div class="cookie-row">
+          <div class="cookie-label">csrftoken</div>
+          <div class="cookie-value">
+            <span class="token" id="token-csrf">—</span>
+          </div>
+        </div>
+
+        <div class="cookie-actions">
+          <button id="copyBoth" class="copy-all">Copy both</button>
+          <span
+            id="cookieStatus"
+            class="cookie-status"
+            aria-live="polite"
+          ></span>
+        </div>
+      </div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

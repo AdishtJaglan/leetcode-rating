@@ -1,5 +1,5 @@
 (function () {
-  const BATCH_URL = "http://localhost:3000/rate-batch";
+  const BATCH_URL = "http://localhost:3000/api/problem/rate-batch";
   const ANCHOR_SELECTOR = 'a[href^="/problems/"][target="_self"][id]';
   const TITLE_SELECTOR = "div.ellipsis.line-clamp-1";
 
@@ -10,6 +10,8 @@
   // ——————————————————————————————
   // Core batch logic
   // ——————————————————————————————
+
+  let lastPayloadJSON = null;
 
   function scheduleBatch() {
     clearTimeout(batchTimer);
@@ -35,12 +37,19 @@
       return;
     }
 
-    const payload = { questions: rows.map((r) => r.title) };
+    const questions = rows.map((r) => r.title);
+    const payloadJSON = JSON.stringify(questions);
+
+    if (payloadJSON === lastPayloadJSON) {
+      console.log("[content] batch skipped (no change in questions)");
+      return;
+    }
+    lastPayloadJSON = payloadJSON;
 
     fetch(BATCH_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ questions }),
     })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);

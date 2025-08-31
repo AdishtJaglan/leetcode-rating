@@ -2,9 +2,41 @@ import { Schema, model } from "mongoose";
 
 const ProblemSchema = new Schema(
   {
-    id: { type: String, required: true, unique: true },
-    title: { type: String, required: true },
-    rating: { type: Number },
+    //! frontend ID
+    _id: {
+      type: String,
+      required: true,
+    },
+    //! this matches leetcodes internal ID
+    questionId: {
+      type: Number,
+      required: true,
+    },
+    title: {
+      type: String,
+      required: true,
+    },
+    titleSlug: {
+      type: String,
+      default: "",
+    },
+    difficulty: {
+      type: String,
+      default: "",
+    },
+    isPaidOnly: {
+      type: Boolean,
+      default: false,
+    },
+    topicTags: [
+      {
+        name: { type: String },
+        slug: { type: String },
+      },
+    ],
+    rating: {
+      type: Number,
+    },
   },
   { timestamps: true }
 );
